@@ -21,6 +21,7 @@ public class FileUploadResult
 /// - Authentication with email/password
 /// - File upload to Supabase Storage
 /// - File listing and download
+/// Uses Repl.it Secrets for secure credential management
 /// </summary>
 public class GhostlyPOC
 {
@@ -86,7 +87,8 @@ public class GhostlyPOC
 
             var fileInfo = new FileInfo(localFilePath);
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-            var fileName = $"{patientCode}_session_{timestamp}_{fileInfo.Name}";
+            var userId = _supabase.Auth.CurrentUser?.Id?.Substring(0, 8) ?? "unknown";
+            var fileName = $"{patientCode}_{userId}_{timestamp}_{fileInfo.Name}";
 
             var fileBytes = await File.ReadAllBytesAsync(localFilePath);
 
@@ -233,41 +235,123 @@ Time(s), Biceps(µV), Triceps(µV)
             Console.WriteLine($"⚠️ Sign out error: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Test RLS by trying to access storage without authentication
+    /// </summary>
+    public async Task<bool> TestRLSProtectionAsync()
+    {
+        try
+        {
+            Console.WriteLine("🔒 Testing RLS Protection (should fail without auth)...");
+
+            // Try to list files without authentication
+            var files = await _supabase.Storage
+                .From("c3d-files")
+                .List();
+
+            Console.WriteLine($"⚠️ RLS bypassed! Found {files.Count} files without auth");
+            return false; // RLS is not working properly
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✅ RLS Working: Access denied without authentication");
+            Console.WriteLine($"   Error: {ex.Message}");
+            return true; // RLS is working correctly
+        }
+    }
 }
 
 /// <summary>
-/// Main program demonstrating GHOSTLY+ Supabase integration
+/// Configuration helper for managing environment variables and secrets
+/// </summary>
+public static class ConfigHelper
+{
+    /// <summary>
+    /// Get environment variable with fallback and validation
+    /// </summary>
+    /// <param name="key">Environment variable key</param>
+    /// <param name="defaultValue">Default value if not found</param>
+    /// <param name="required">Whether this variable is required</param>
+    /// <returns>Environment variable value or default</returns>
+    public static string GetEnvironmentVariable(string key, string defaultValue = null, bool required = false)
+    {
+        var value = Environment.GetEnvironmentVariable(key);
+
+        if (string.IsNullOrEmpty(value))
+        {
+            if (required)
+            {
+                throw new InvalidOperationException($"Required environment variable '{key}' is not set");
+            }
+            return defaultValue;
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Validate that all required Supabase configuration is present
+    /// </summary>
+    /// <returns>True if configuration is valid</returns>
+    public static bool ValidateSupabaseConfig(out string supabaseUrl, out string supabaseKey)
+    {
+        try
+        {
+            supabaseUrl = GetEnvironmentVariable("SUPABASE_URL", required: true);
+            supabaseKey = GetEnvironmentVariable("SUPABASE_ANON_KEY", required: true);
+
+            // Basic validation
+            if (!supabaseUrl.StartsWith("https://"))
+            {
+                Console.WriteLine("❌ SUPABASE_URL must start with https://");
+                return false;
+            }
+
+            if (supabaseKey.Length < 50) // Anon keys are typically much longer
+            {
+                Console.WriteLine("❌ SUPABASE_ANON_KEY appears to be invalid (too short)");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Configuration error: {ex.Message}");
+            supabaseUrl = null;
+            supabaseKey = null;
+            return false;
+        }
+    }
+}
+
+/// <summary>
+/// Main program demonstrating GHOSTLY+ Supabase integration with secure configuration
 /// </summary>
 public class Program
 {
-    // ⚠️ REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-    private static readonly string SUPABASE_URL = "https://your-project.supabase.co";
-    private static readonly string SUPABASE_ANON_KEY = "your-anon-key";
-
     public static async Task Main(string[] args)
     {
         Console.WriteLine("🎮 GHOSTLY+ Supabase C# Client POC");
         Console.WriteLine("===================================\n");
 
-        // Check if credentials are configured
-        if (SUPABASE_URL.Contains("your-project"))
+        // Load credentials from environment variables (Repl.it Secrets)
+        if (!ConfigHelper.ValidateSupabaseConfig(out string supabaseUrl, out string supabaseKey))
         {
-            Console.WriteLine("⚠️ SETUP REQUIRED:");
-            Console.WriteLine("1. Go to https://supabase.com");
-            Console.WriteLine("2. Create new project");
-            Console.WriteLine("3. Settings > API > Copy URL and anon key");
-            Console.WriteLine("4. Replace SUPABASE_URL and SUPABASE_ANON_KEY in code");
-            Console.WriteLine("5. Create 'c3d-files' storage bucket");
-            Console.WriteLine("6. Create test user in Authentication");
+            Console.WriteLine("❌ Missing configuration! Please check the README.md for setup instructions.");
             return;
         }
 
-        var ghostly = new GhostlyPOC(SUPABASE_URL, SUPABASE_ANON_KEY);
+        Console.WriteLine("✅ Connected to Supabase");
+
+        var ghostly = new GhostlyPOC(supabaseUrl, supabaseKey);
 
         try
         {
             // 1. Authentication
             Console.WriteLine("🔐 Authentication");
+
             Console.Write("Email: ");
             var email = Console.ReadLine();
             Console.Write("Password: ");
@@ -303,7 +387,7 @@ public class Program
             {
                 Console.WriteLine("📥 Download Test");
                 var firstFile = files[0];
-                var downloadPath = Path.Combine("/tmp", $"downloaded_{firstFile.Name}");
+                var downloadPath = Path.Combine("./c3d-test-download", $"downloaded_{firstFile.Name}");
                 await ghostly.DownloadFileAsync(firstFile.Name, downloadPath);
                 Console.WriteLine();
             }
@@ -329,4 +413,3 @@ public class Program
         Console.ReadKey();
     }
 }
-

@@ -1,0 +1,11 @@
+GHOSTLY+ Sample EMG Data
+Patient: PATIENT_001
+Generated: 2025-06-06 08:51:41
+
+Sample EMG readings:
+Time(s), Biceps(µV), Triceps(µV)
+0.00, 45.2, 32.1
+0.01, 48.6, 35.4
+0.02, 52.1, 29.8
+0.03, 49.3, 38.7
+0.04, 46.8, 33.2
