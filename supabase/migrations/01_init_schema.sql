@@ -104,6 +104,12 @@ USING (
         SELECT id FROM public.patients
         WHERE therapist_id = public.get_current_therapist_id()
     )
+)
+WITH CHECK (
+    patient_id IN (
+        SELECT id FROM public.patients
+        WHERE therapist_id = public.get_current_therapist_id()
+    )
 );
 
 

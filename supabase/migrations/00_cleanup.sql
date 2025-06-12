@@ -22,7 +22,7 @@ DROP FUNCTION IF EXISTS get_current_therapist_id();
 
 -- Force delete the test users from the auth schema.
 -- This is useful for cleaning up "corrupted" users that are difficult to remove from the UI.
-DELETE FROM auth.users WHERE email IN ('therapist1@example.com', 'therapist2@example.com','test@ghostly.com','sarah.johnson@ghostly.com','michael.chen@ghostly.com');
+DELETE FROM auth.users WHERE email IN ('michael.chen@ghostly.com');
 
 
 -- Clean up and delete ONLY the 'emg_data' bucket, leaving all others intact.
