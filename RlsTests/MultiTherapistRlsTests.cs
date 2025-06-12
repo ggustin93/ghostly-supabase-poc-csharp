@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using GhostlySupaPoc.Models;
+using GhostlySupaPoc.Utils;
 
 namespace GhostlySupaPoc.RlsTests
 {
@@ -15,9 +16,7 @@ namespace GhostlySupaPoc.RlsTests
     {
         public static async Task RunAllTests(Supabase.Client supabase, string therapist1Email, string therapist1Password, string therapist2Email, string therapist2Password, string rlsTestBucket)
         {
-            Console.WriteLine("\n\n=============================================");
-            Console.WriteLine("= Starting Multi-Therapist RLS Validation Tests =");
-            Console.WriteLine("=============================================");
+            ConsoleHelper.WriteMajorHeader("Starting Multi-Therapist RLS Validation Tests");
 
             // --- Run tests for Therapist 1 ---
             await Test_CanAccessOwnData(supabase, therapist1Email, therapist1Password, "Therapist 1");
@@ -30,12 +29,12 @@ namespace GhostlySupaPoc.RlsTests
             await Test_CanAccessOwnData(supabase, therapist2Email, therapist2Password, "Therapist 2");
             await Test_CanDownloadOwnFiles(supabase, therapist2Email, therapist2Password, "Therapist 2", rlsTestBucket);
 
-            Console.WriteLine("\n\nRLS Validation Tests Completed.");
+            ConsoleHelper.WriteSecurity("\nRLS Validation Tests Completed Successfully! 🎉");
         }
 
         private static async Task Test_CanAccessOwnData(Supabase.Client supabase, string email, string password, string therapistName)
         {
-            Console.WriteLine($"\n--- TEST: {therapistName} can access their own data ---");
+            ConsoleHelper.WriteHeader($"TEST: {therapistName} can access their own data");
             await supabase.Auth.SignIn(email, password);
 
             var patientResponse = await supabase.From<Patient>().Get();
@@ -43,7 +42,7 @@ namespace GhostlySupaPoc.RlsTests
 
             if (patientResponse.Models.Any() && sessionResponse.Models.Any())
             {
-                Console.WriteLine($"SUCCESS: {therapistName} correctly fetched {patientResponse.Models.Count} patient(s) and {sessionResponse.Models.Count} session(s).");
+                ConsoleHelper.WriteSuccess($"{therapistName} correctly fetched {patientResponse.Models.Count} patient(s) and {sessionResponse.Models.Count} session(s).");
             }
             else
             {
@@ -54,14 +53,14 @@ namespace GhostlySupaPoc.RlsTests
 
         private static async Task Test_CannotAccessOthersData(Supabase.Client supabase, string email, string password, string therapistName)
         {
-            Console.WriteLine($"\n--- TEST: {therapistName} CANNOT access data from other therapists ---");
+            ConsoleHelper.WriteHeader($"TEST: {therapistName} CANNOT access data from other therapists");
             await supabase.Auth.SignIn(email, password);
 
             var patientResponse = await supabase.From<Patient>().Not("last_name", Postgrest.Constants.Operator.Equals, "Alpha").Get();
 
             if (!patientResponse.Models.Any())
             {
-                Console.WriteLine($"SUCCESS: {therapistName} was correctly blocked from seeing other therapists' patients.");
+                ConsoleHelper.WriteSuccess($"{therapistName} was correctly blocked from seeing other therapists' patients.");
             }
             else
             {
@@ -72,7 +71,7 @@ namespace GhostlySupaPoc.RlsTests
 
         private static async Task Test_CanDownloadOwnFiles(Supabase.Client supabase, string email, string password, string therapistName, string rlsTestBucket)
         {
-            Console.WriteLine($"\n--- TEST: {therapistName} can download their own patient's files ---");
+            ConsoleHelper.WriteHeader($"TEST: {therapistName} can download their own patient's files");
             await supabase.Auth.SignIn(email, password);
 
             var sessionResponse = await supabase.From<EmgSession>().Get();
@@ -82,7 +81,7 @@ namespace GhostlySupaPoc.RlsTests
 
             if (fileBytes != null && fileBytes.Length > 0)
             {
-                Console.WriteLine($"SUCCESS: {therapistName} successfully downloaded file '{session.FilePath}'.");
+                ConsoleHelper.WriteSuccess($"{therapistName} successfully downloaded file '{session.FilePath}'.");
             }
             else
             {
@@ -93,13 +92,13 @@ namespace GhostlySupaPoc.RlsTests
 
         private static async Task Test_CannotDownloadOthersFiles(Supabase.Client supabase, string attackerEmail, string attackerPassword, string attackerName, string victimEmail, string victimPassword, string rlsTestBucket)
         {
-            Console.WriteLine($"\n--- TEST: {attackerName} CANNOT download files of another therapist's patient ---");
+            ConsoleHelper.WriteHeader($"TEST: {attackerName} CANNOT download files of another therapist's patient");
 
             await supabase.Auth.SignIn(victimEmail, victimPassword);
             var victimSession = (await supabase.From<EmgSession>().Get()).Models.First();
             var victimFilePath = victimSession.FilePath;
             await supabase.Auth.SignOut();
-            Console.WriteLine($"Obtained victim's file path: {victimFilePath}");
+            ConsoleHelper.WriteInfo($"Obtained victim's file path: {victimFilePath}");
 
             await supabase.Auth.SignIn(attackerEmail, attackerPassword);
             try
@@ -109,7 +108,8 @@ namespace GhostlySupaPoc.RlsTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"SUCCESS: {attackerName} was correctly blocked from downloading the file. Received expected error: {ex.Message}");
+                ConsoleHelper.WriteSuccess($"{attackerName} was correctly blocked from downloading the file.");
+                ConsoleHelper.WriteInfo($"Expected error: {ex.Message}");
             }
             finally
             {

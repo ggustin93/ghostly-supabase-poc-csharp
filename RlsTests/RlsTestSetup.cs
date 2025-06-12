@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using GhostlySupaPoc.Models;
+using GhostlySupaPoc.Utils;
 
 namespace GhostlySupaPoc.RlsTests
 {
@@ -16,7 +17,7 @@ namespace GhostlySupaPoc.RlsTests
     {
         public static async Task PrepareTestEnvironment(Supabase.Client supabase, string therapistEmail, string therapistPassword, string rlsTestBucket)
         {
-            Console.WriteLine($"\n--- Preparing test environment for: {therapistEmail} ---");
+            ConsoleHelper.WriteHeader($"Preparing test environment for: {therapistEmail}");
 
             try
             {
@@ -25,17 +26,17 @@ namespace GhostlySupaPoc.RlsTests
                 {
                     throw new Exception($"Authentication failed for {therapistEmail}.");
                 }
-                Console.WriteLine($"Successfully authenticated as {therapistEmail}.");
+                ConsoleHelper.WriteSuccess($"Successfully authenticated as {therapistEmail}.");
 
                 var patientResponse = await supabase.From<Patient>().Get();
                 var patient = patientResponse.Models.FirstOrDefault();
 
                 if (patient == null)
                 {
-                    Console.WriteLine($"No patient found for {therapistEmail}. This might be expected if the therapist has no patients.");
+                    ConsoleHelper.WriteWarning($"No patient found for {therapistEmail}. This might be expected if the therapist has no patients.");
                     return;
                 }
-                Console.WriteLine($"Found assigned patient: {patient.FirstName} {patient.LastName} (ID: {patient.Id})");
+                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName} (ID: {patient.Id})");
 
                 var fileName = $"test-session-{Guid.NewGuid()}.bin";
                 var filePathInBucket = $"{patient.Id}/{fileName}";
@@ -43,7 +44,7 @@ namespace GhostlySupaPoc.RlsTests
                 var memoryStream = new MemoryStream(fileContent);
 
                 await supabase.Storage.From(rlsTestBucket).Upload(memoryStream.ToArray(), filePathInBucket);
-                Console.WriteLine($"Successfully uploaded file to: {filePathInBucket}");
+                ConsoleHelper.WriteSuccess($"Successfully uploaded file to: {filePathInBucket}");
 
                 var emgSession = new EmgSession
                 {
@@ -54,11 +55,11 @@ namespace GhostlySupaPoc.RlsTests
                 };
 
                 await supabase.From<EmgSession>().Insert(emgSession);
-                Console.WriteLine("Successfully created EMG session metadata record.");
+                ConsoleHelper.WriteSuccess("Successfully created EMG session metadata record.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred during test setup for {therapistEmail}: {ex.Message}");
+                ConsoleHelper.WriteError($"An error occurred during test setup for {therapistEmail}: {ex.Message}");
                 throw;
             }
             finally

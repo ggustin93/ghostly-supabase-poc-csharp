@@ -27,11 +27,11 @@ namespace GhostlySupaPoc
             // Initialize and validate Supabase connection from centralized config
             if (!TestConfig.IsValid())
             {
-                Console.WriteLine("❌ Invalid configuration! Please check your environment variables.");
+                ConsoleHelper.WriteError("Invalid configuration! Please check your environment variables.");
                 Console.ReadKey();
                 return;
             }
-            Console.WriteLine("✅ Connected to Supabase\n");
+            ConsoleHelper.WriteSuccess("Connected to Supabase\n");
 
             try
             {
@@ -41,7 +41,9 @@ namespace GhostlySupaPoc
                 Console.WriteLine("2️⃣ Raw HTTP API Client (Legacy)");
                 Console.WriteLine("3️⃣ Both (Comparison Mode)");
                 Console.WriteLine("4️⃣ Cleanup Test Files");
-                Console.WriteLine("5️⃣ Multi-Therapist RLS Test");
+                Console.ForegroundColor = ConsoleColor.Magenta;
+                Console.WriteLine("5️⃣ Multi-Therapist RLS Test " + ConsoleHelper.SECURITY);
+                Console.ResetColor();
                 Console.Write("Choice (1/2/3/4/5): ");
                 var choice = Console.ReadLine();
                 Console.WriteLine();
