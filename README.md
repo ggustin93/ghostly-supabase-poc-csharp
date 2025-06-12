@@ -1,6 +1,6 @@
 # GHOSTLY+ Supabase C# POC
 
-GHOSTLY+ (Gamified Healthcare Optimization System with Therapist-Level Security) is a .NET 7 Proof of Concept (POC) demonstrating the capabilities of Supabase for building secure, multi-tenant medical applications. The primary focus is on implementing robust Row-Level Security (RLS) to ensure that therapists can only access data belonging to their own assigned patients.
+GHOSTLY+ is a .NET 7 Proof of Concept (POC) demonstrating the capabilities of Supabase for building secure, multi-tenant medical applications. The primary focus is on implementing robust Row-Level Security (RLS) to ensure that therapists can only access data belonging to their own assigned patients.
 
 This repository serves as a technical showcase for comparing different client implementations and validating complex security models with Supabase.
 

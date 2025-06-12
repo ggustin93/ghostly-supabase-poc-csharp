@@ -117,7 +117,7 @@ namespace GhostlySupaPoc
                         }
                         
                         // Display a single, combined summary at the end of both rounds
-                        Utils.DisplayTestSummary(supabaseSuccess, httpSuccess, patientCode, isComparison: true);
+                        PocUtils.DisplayTestSummary(supabaseSuccess, httpSuccess, patientCode, isComparison: true);
                         break;
                     case "4":
                         CleanupTestFiles();
@@ -150,7 +150,7 @@ namespace GhostlySupaPoc
 
             // Determine which client ran to display the correct summary
             var isSupabaseClient = client is LegacySupabaseClient;
-            Utils.DisplayTestSummary(
+            PocUtils.DisplayTestSummary(
                 supabaseSuccess: isSupabaseClient && success, 
                 httpSuccess: !isSupabaseClient && success, 
                 patientCode: patientCode,
@@ -175,7 +175,7 @@ namespace GhostlySupaPoc
                 patientCode = Console.ReadLine()?.Trim().ToUpper();
                 if (string.IsNullOrEmpty(patientCode))
                 {
-                    patientCode = Utils.GenerateTestPatientCode();
+                    patientCode = PocUtils.GenerateTestPatientCode();
                     Console.WriteLine($"   ⚠️ Using default: {patientCode}");
                 }
                 else
@@ -185,7 +185,7 @@ namespace GhostlySupaPoc
             }
             else
             {
-                patientCode = Utils.GenerateTestPatientCode();
+                patientCode = PocUtils.GenerateTestPatientCode();
                 Console.WriteLine($"   🎲 Generated: {patientCode}");
             }
             Console.WriteLine();
@@ -202,7 +202,7 @@ namespace GhostlySupaPoc
 
             try
             {
-                var cleanedCount = Utils.CleanupTestFiles();
+                var cleanedCount = PocUtils.CleanupTestFiles();
 
                 Console.WriteLine($"✅ Cleanup completed!");
                 Console.WriteLine($"📁 Removed {cleanedCount} local test files");
@@ -234,7 +234,7 @@ namespace GhostlySupaPoc
 
                 // Test 2: File Upload (with patient subfolder)
                 ConsoleHelper.WriteHeader($"2️⃣ File Upload Test (Patient: {patientCode})");
-                var sampleFile = await Utils.CreateSampleC3DFileAsync(patientCode);
+                var sampleFile = await PocUtils.CreateSampleC3DFileAsync(patientCode);
                 if (sampleFile != null)
                 {
                     var uploadResult = await ghostly.UploadFileAsync(patientCode, sampleFile);

@@ -48,7 +48,7 @@ namespace GhostlySupaPoc.Utils
     /// Generic utility functions for the POC, including test data generation and file operations.
     /// Renamed from PocUtils to Utils for clarity.
     /// </summary>
-    public static class Utils
+    public static class PocUtils
     {
         private const string TestFileDirectory = "c3d-test-files";
 
