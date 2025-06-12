@@ -13,6 +13,9 @@ namespace GhostlySupaPoc.Models
         [Column("patient_id")]
         public Guid PatientId { get; set; }
 
+        [Column("therapist_id")]
+        public Guid TherapistId { get; set; }
+
         [Column("file_path")]
         public string FilePath { get; set; }
 

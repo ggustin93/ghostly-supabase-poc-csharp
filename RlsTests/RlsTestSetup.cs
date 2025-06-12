@@ -67,6 +67,7 @@ namespace GhostlySupaPoc.RlsTests
                 var emgSession = new EmgSession
                 {
                     PatientId = patient.Id,
+                    TherapistId = patient.TherapistId,
                     FilePath = filePathInBucket,
                     RecordedAt = DateTime.UtcNow,
                     Notes = $"Test session created by automated setup for {therapistEmail}. File Name: {fileName}"
