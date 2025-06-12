@@ -38,20 +38,20 @@ namespace GhostlySupaPoc.RlsTests
                 }
                 
                 // Display detailed patient information
-                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName}");
-                ConsoleHelper.WriteInfo($"  │ ID: {patient.Id}");
+                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName} ({patient.PatientCode})");
+                ConsoleHelper.WriteInfo($"  │ Patient ID (DB): {patient.Id}");
                 ConsoleHelper.WriteInfo($"  └ Assigned to therapist: {patient.TherapistId}");
 
-                // Create a test file with a Guid for uniqueness
-                var sessionId = Guid.NewGuid();
-                var fileName = $"test-session-{sessionId}.bin";
-                var filePathInBucket = $"{patient.Id}/{fileName}";
+                // Create a test file with a readable, timestamp-based name
+                var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                var fileName = $"{patient.PatientCode}_EMG-Test_{timestamp}.bin";
+                var filePathInBucket = $"{patient.PatientCode}/{fileName}";
                 
                 // Include session ID in file content for traceability
                 var fileContent = Encoding.UTF8.GetBytes(
                     $"GHOSTLY+ Test EMG Data\n" +
-                    $"Patient ID: {patient.Id}\n" +
-                    $"Session ID: {sessionId}\n" +
+                    $"Patient Code: {patient.PatientCode} ({patient.Id})\n" +
+                    $"File Name: {fileName}\n" +
                     $"Created: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}\n" +
                     $"Therapist: {therapistEmail}\n" +
                     $"This is a test file created by the automated RLS validation tests."
@@ -62,14 +62,14 @@ namespace GhostlySupaPoc.RlsTests
                 ConsoleHelper.WriteSuccess($"Successfully uploaded file to: {filePathInBucket}");
                 ConsoleHelper.WriteInfo($"  │ Bucket: {rlsTestBucket}");
                 ConsoleHelper.WriteInfo($"  │ File Size: {fileContent.Length} bytes");
-                ConsoleHelper.WriteInfo($"  └ Session ID: {sessionId}");
+                ConsoleHelper.WriteInfo($"  └ File Name: {fileName}");
 
                 var emgSession = new EmgSession
                 {
                     PatientId = patient.Id,
                     FilePath = filePathInBucket,
                     RecordedAt = DateTime.UtcNow,
-                    Notes = $"Test session created by automated setup for {therapistEmail}. Session ID: {sessionId}"
+                    Notes = $"Test session created by automated setup for {therapistEmail}. File Name: {fileName}"
                 };
 
                 var response = await supabase.From<EmgSession>().Insert(emgSession);

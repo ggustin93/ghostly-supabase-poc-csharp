@@ -90,9 +90,9 @@ graph TD
 - Automatic filtering of unauthorized access
 
 ### 2. Storage Security
-- Patient folder access control
-- File operation authorization
-- Secure upload/download paths
+- Patient folder access control based on a readable `patient_code` (e.g., `P001`).
+- RLS policies prevent unauthorized listing or access of patient folders.
+- Secure file operation authorization via database helper functions.
 
 ### 3. Authentication Security
 - JWT token management
@@ -106,42 +106,38 @@ graph TD
 
 ## Database Schema
 
-### Current Schema (Phase 1)
-- Simple file storage structure
-- Patient code-based organization
+### Implemented Schema
+The schema uses a one-to-many relationship between therapists and patients. A human-readable `patient_code` is automatically generated for each patient and is used as the subfolder name in the storage bucket, enhancing readability and security.
 
-### Planned Schema (Phase 2)
 ```sql
+-- Sequence for auto-generating patient codes (e.g., P001, P002)
+CREATE SEQUENCE public.patient_code_seq;
+
 -- Therapists table
-CREATE TABLE therapists (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    hospital TEXT DEFAULT 'UZ Brussels',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE public.therapists (
+    id UUID PRIMARY KEY,
+    user_id UUID UNIQUE NOT NULL REFERENCES auth.users(id),
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL
 );
 
--- Patients table
-CREATE TABLE patients (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_code TEXT UNIQUE NOT NULL,
-    therapist_id UUID REFERENCES therapists(id) NOT NULL,
-    name TEXT NOT NULL,
-    age INTEGER,
-    hospital TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- Patients table with readable, unique patient code
+CREATE TABLE public.patients (
+    id UUID PRIMARY KEY,
+    therapist_id UUID NOT NULL REFERENCES public.therapists(id),
+    patient_code TEXT NOT NULL UNIQUE DEFAULT ('P' || LPAD(nextval('patient_code_seq')::text, 3, '0')),
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    date_of_birth DATE NOT NULL
 );
 
 -- EMG Sessions table
-CREATE TABLE emg_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID REFERENCES patients(id) NOT NULL,
-    therapist_id UUID REFERENCES therapists(id) NOT NULL,
-    file_path TEXT NOT NULL,
-    session_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    game_level INTEGER,
-    score INTEGER,
-    duration_minutes INTEGER
+CREATE TABLE public.emg_sessions (
+    id UUID PRIMARY KEY,
+    patient_id UUID NOT NULL REFERENCES public.patients(id),
+    file_path TEXT NOT NULL UNIQUE, -- e.g., "P001/P001_C3D-Test_20231027_123000.c3d"
+    recorded_at TIMESTAMPTZ NOT NULL,
+    notes TEXT
 );
 ```
 
@@ -170,11 +166,11 @@ CREATE TABLE emg_sessions (
   - Cross-platform compatibility
 
 ### 4. Storage Organization
-- **Decision**: Patient-specific folders
+- **Decision**: Patient-specific folders using a human-readable `patient_code` (e.g., `P001`).
 - **Rationale**:
-  - Natural data organization
-  - Simplified access control
-  - Easy RLS implementation
+  - Natural data organization and improved readability over UUIDs.
+  - Simplified and more secure access control.
+  - Easy RLS implementation using the `patient_code` as the key.
 
 ### 5. RLS over API-level checks
 - **Decision**: Row-Level Security was chosen to enforce data access rules directly within the database, providing a more robust and centralized security model compared to application-level checks.

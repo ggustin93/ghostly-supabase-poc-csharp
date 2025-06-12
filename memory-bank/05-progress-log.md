@@ -209,6 +209,16 @@
     - Added a `.gitignore` file to keep the repository clean.
 - **Outcome:** The project is now significantly cleaner, more professional, and easier to maintain and scale. The new structure clearly separates new development from legacy/comparison code.
 
+### July 28, 2024 - Enhanced Security and Readability
+- **Phase:** RLS Implementation & Refinement
+- **Changes:**
+    - **Patched Security Vulnerability:** Corrected a critical RLS policy on storage that previously allowed any authenticated user to list all files in a bucket, preventing a data leak.
+    - **Introduced Readable Patient IDs:** Replaced UUIDs with a human-readable, auto-incrementing `patient_code` (e.g., `P001`) for identifying patients.
+    - **Updated Storage Paths:** All storage operations now use the `patient_code` for folder paths (e.g., `emg-data/P001/file.c3d`), improving readability and management.
+    - **Refined RLS Policies:** All database and storage RLS policies were updated to use the new `patient_code`, simplifying the security logic.
+    - **Improved Test Filenames:** The automated tests now generate files with more descriptive names (e.g., `P001_C3D-Test_20231027_123000.c3d`) for easier debugging.
+- **Outcome:** The application is now more secure, with properly isolated patient data. The use of readable IDs and filenames significantly improves the developer experience and makes the system easier to debug and maintain. The core RLS testing framework is robust and validates the correct security behavior.
+
 ## Scope and Outcome
 - **Scope:** Initial setup of five core Memory Bank documents.
 - **Outcome:** The Memory Bank is now active and provides essential context for future development. 

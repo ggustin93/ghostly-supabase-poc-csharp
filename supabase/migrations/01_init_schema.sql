@@ -17,6 +17,9 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. DATABASE SCHEMA
 --------------------------------------------------------------------------------
 
+-- Create a sequence to generate readable, auto-incrementing patient codes (e.g., P001, P002).
+CREATE SEQUENCE IF NOT EXISTS public.patient_code_seq START 1;
+
 -- Table to store therapist profiles.
 -- Links to `auth.users` to associate each therapist with an authentication identity.
 CREATE TABLE IF NOT EXISTS public.therapists (
@@ -31,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.therapists (
 CREATE TABLE IF NOT EXISTS public.patients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     therapist_id UUID NOT NULL REFERENCES public.therapists(id),
+    patient_code TEXT NOT NULL UNIQUE DEFAULT ('P' || LPAD(nextval('patient_code_seq')::text, 3, '0')),
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     date_of_birth DATE NOT NULL,
@@ -107,9 +111,9 @@ USING (
 -- 5. STORAGE POLICIES
 --------------------------------------------------------------------------------
 
--- Helper function to check if a therapist is assigned to a patient.
--- This simplifies the storage policies.
-CREATE OR REPLACE FUNCTION public.is_assigned_to_patient(patient_uuid UUID)
+-- Helper function to check if a therapist is assigned to a patient via patient_code.
+-- This simplifies the storage policies and makes them more readable.
+CREATE OR REPLACE FUNCTION public.is_assigned_to_patient(p_code TEXT)
 RETURNS BOOLEAN AS $$
 DECLARE
     is_assigned BOOLEAN;
@@ -117,26 +121,27 @@ BEGIN
     SELECT EXISTS (
         SELECT 1
         FROM public.patients
-        WHERE id = patient_uuid AND therapist_id = public.get_current_therapist_id()
+        WHERE patient_code = p_code AND therapist_id = public.get_current_therapist_id()
     ) INTO is_assigned;
     RETURN is_assigned;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- The policies are now simpler and rely on the `is_assigned_to_patient` helper function.
 -- The file's path is expected to be `patient-uuid/filename`.
 
+-- THIS POLICY IS TOO PERMISSIVE AND IS THE SOURCE OF THE SECURITY FLAW.
+-- It allows any authenticated user to LIST all files, which can leak patient IDs.
+-- We are removing it in favor of a more restrictive SELECT policy below.
 DROP POLICY IF EXISTS "Allow therapists to list the emg_data bucket" ON storage.objects;
-CREATE POLICY "Allow therapists to list the emg_data bucket"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'emg_data');
 
+-- This single, more secure SELECT policy replaces the two previous ones.
+-- It correctly restricts both listing and downloading to assigned patients' folders.
 DROP POLICY IF EXISTS "Allow therapists to access files for assigned patients" ON storage.objects;
 CREATE POLICY "Allow therapists to access files for assigned patients"
 ON storage.objects FOR SELECT
 USING (
     bucket_id = 'emg_data' AND
-    public.is_assigned_to_patient((storage.foldername(name))[1]::UUID)
+    public.is_assigned_to_patient((storage.foldername(name))[1])
 );
 
 DROP POLICY IF EXISTS "Allow therapists to upload files for assigned patients" ON storage.objects;
@@ -144,7 +149,7 @@ CREATE POLICY "Allow therapists to upload files for assigned patients"
 ON storage.objects FOR INSERT
 WITH CHECK (
     bucket_id = 'emg_data' AND
-    public.is_assigned_to_patient((storage.foldername(name))[1]::UUID)
+    public.is_assigned_to_patient((storage.foldername(name))[1])
 );
 
 DROP POLICY IF EXISTS "Allow therapists to update files for assigned patients" ON storage.objects;
@@ -152,7 +157,7 @@ CREATE POLICY "Allow therapists to update files for assigned patients"
 ON storage.objects FOR UPDATE
 USING (
     bucket_id = 'emg_data' AND
-    public.is_assigned_to_patient((storage.foldername(name))[1]::UUID)
+    public.is_assigned_to_patient((storage.foldername(name))[1])
 );
 
 DROP POLICY IF EXISTS "Allow therapists to delete files for assigned patients" ON storage.objects;
@@ -160,5 +165,5 @@ CREATE POLICY "Allow therapists to delete files for assigned patients"
 ON storage.objects FOR DELETE
 USING (
     bucket_id = 'emg_data' AND
-    public.is_assigned_to_patient((storage.foldername(name))[1]::UUID)
+    public.is_assigned_to_patient((storage.foldername(name))[1])
 );
