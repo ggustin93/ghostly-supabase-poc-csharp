@@ -50,15 +50,22 @@ Phase 2: Multi-Therapist RLS Implementation
 - Supabase Dashboard for configuration
 
 ## Repository Structure
+The project has been refactored into a clean, feature-oriented structure.
+
 ```
-├── main.cs                 # Application entry point
-├── main.csproj            # Project configuration
-├── GhostlySupaPOC.cs      # Supabase client implementation
-├── GhostlyHttpPOC.cs      # Raw HTTP client implementation
-├── Utils.cs               # Utility functions and helpers
-├── Models.cs              # (Planned) Data models
-├── c3d-test-download/     # Test file download directory
-└── memory-bank/           # Project documentation
+.
+├── src/
+│   ├── Clients/      # Legacy client implementations
+│   ├── Config/       # Environment configuration
+│   ├── Models/       # C# data models (POCOs)
+│   ├── RlsTests/     # The multi-therapist RLS test suite
+│   ├── Utils/        # Shared utility classes
+│   └── main.cs       # Application entry point
+├── supabase/
+│   └── migrations/   # SQL migration scripts
+├── .gitignore
+├── ghostly-supabase-poc-csharp.sln
+└── memory-bank/      # Project documentation
 ```
 
 ## Getting Started

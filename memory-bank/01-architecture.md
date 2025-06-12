@@ -184,16 +184,4 @@ CREATE TABLE public.emg_sessions (
 - **Rationale**:
   - Reduced complexity
   - Matches business requirements
-  - Simplified data access control
-
-## Project Structure (Post-Refactoring)
-The project follows a clean, feature-oriented structure to separate concerns and improve maintainability:
-
-- **`/src`**: Contains all C# source code.
-    - **`/src/Models`**: Houses all Plain Old C# Object (POCO) data models (e.g., `Patient.cs`, `EmgSession.cs`). This ensures a single source of truth for data structures.
-    - **`/src/Clients`**: Contains different client implementations for interacting with Supabase. This includes the cleaner versions of the original POCs (`LegacySupabaseClient.cs`, `LegacyHttpClient.cs`) and any new clients.
-    - **`/src/RlsTests`**: Holds the specific test suite for validating the multi-therapist Row-Level Security implementation.
-    - **`/src/Utils`**: Provides shared, generic utility classes (e.g., for environment variables, file operations).
-- **`/supabase/migrations`**: Contains all SQL migration scripts, managed in chronological order.
-- **`/memory-bank`**: Stores all project documentation and architectural decisions.
-- **`main.cs`**: The main entry point of the application, located inside `/src`. 
+  - Simplified data access control 

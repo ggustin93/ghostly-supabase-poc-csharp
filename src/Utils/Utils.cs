@@ -45,11 +45,13 @@ namespace GhostlySupaPoc.Utils
     }
 
     /// <summary>
-    /// Configuration and utility helper specifically for the legacy POCs,
-    /// managing environment variables, file operations, and test data.
+    /// Generic utility functions for the POC, including test data generation and file operations.
+    /// Renamed from PocUtils to Utils for clarity.
     /// </summary>
-    public static class PocUtils
+    public static class Utils
     {
+        private const string TestFileDirectory = "c3d-test-files";
+
         /// <summary>
         /// Get environment variable with fallback and validation
         /// </summary>
@@ -256,64 +258,56 @@ Device: Android Tablet (GHOSTLY+ v1.2)
         }
 
         /// <summary>
-        /// Display a summary of the POC test results
+        /// Displays a summary of the test results.
         /// </summary>
-        /// <param name="supabaseSuccess">Whether Supabase client test succeeded</param>
-        /// <param name="httpSuccess">Whether HTTP client test succeeded</param>
-        /// <param name="patientCode">Patient code used in tests</param>
-        public static void DisplayTestSummary(bool supabaseSuccess, bool httpSuccess, string patientCode)
+        public static void DisplayTestSummary(bool supabaseSuccess, bool httpSuccess, string patientCode, bool isComparison)
         {
-            Console.WriteLine();
-            ConsoleHelper.WriteMajorHeader("*** GHOSTLY+ POC TEST SUMMARY ***");
-
-            ConsoleHelper.WriteInfo($"Test Configuration:");
+            Console.WriteLine("\n\n*** GHOSTLY+ POC TEST SUMMARY ***");
+            Console.WriteLine("=================================");
+            Console.WriteLine("ℹ️ Test Configuration:");
             Console.WriteLine($"   Patient Code: {patientCode}");
             Console.WriteLine($"   Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             Console.WriteLine($"   Supabase URL: {TestConfig.SupabaseUrl}");
             Console.WriteLine($"   Bucket: {TestConfig.LegacyTestBucket}");
-            Console.WriteLine();
+            
+            Console.WriteLine("\n> Results:");
 
-            Console.WriteLine($"> Results:");
-            if (supabaseSuccess)
-                ConsoleHelper.WriteSuccess($"Supabase Client: SUCCESS");
-            else
-                ConsoleHelper.WriteError($"Supabase Client: FAILED");
-                
-            if (httpSuccess)
-                ConsoleHelper.WriteSuccess($"HTTP Client: SUCCESS");
-            else
-                ConsoleHelper.WriteError($"HTTP Client: FAILED");
-                
-            Console.WriteLine();
+            if (isComparison)
+            {
+                Console.WriteLine(supabaseSuccess ? "✅ Supabase Client: SUCCESS" : "❌ Supabase Client: FAILED");
+                Console.WriteLine(httpSuccess ? "✅ HTTP Client: SUCCESS" : "❌ HTTP Client: FAILED");
 
-            if (supabaseSuccess && httpSuccess)
-            {
-                ConsoleHelper.WriteSuccess("🎉 Both implementations work as expected !");
-                ConsoleHelper.WriteInfo($"Patient {patientCode} files are properly organized in Supabase Storage");
-                
-                // Display database information for reference
-                ConsoleHelper.WriteInfo("Database Information:");
-                ConsoleHelper.WriteInfo($"  │ Database URL: {TestConfig.SupabaseUrl}");
-                ConsoleHelper.WriteInfo($"  │ Storage Bucket: {TestConfig.LegacyTestBucket}");
-                ConsoleHelper.WriteInfo($"  │ Path Format: {patientCode}/<filename>");
-                ConsoleHelper.WriteInfo($"  └ RLS Enabled: Yes");
-            }
-            else if (supabaseSuccess || httpSuccess)
-            {
-                ConsoleHelper.WriteWarning("⚠️ PARTIAL SUCCESS - One implementation needs attention");
-                var working = supabaseSuccess ? "Supabase Client" : "HTTP Client";
-                var failing = supabaseSuccess ? "HTTP Client" : "Supabase Client";
-                ConsoleHelper.WriteSuccess($"{working} is working perfectly");
-                ConsoleHelper.WriteError($"{failing} needs debugging - check logs above");
+                if (supabaseSuccess && httpSuccess)
+                {
+                    Console.WriteLine("\n✅ 🎉 Both implementations work as expected !");
+                    Console.WriteLine("ℹ️ Patient files are properly organized in Supabase Storage");
+                }
+                else
+                {
+                    Console.WriteLine("\n❌ ❌ One or both implementations failed.");
+                    Console.WriteLine("ℹ️ Review the logs above to diagnose the issue.");
+                }
             }
             else
             {
-                ConsoleHelper.WriteError("❌ CONFIGURATION ISSUE - Both implementations failed");
-                ConsoleHelper.WriteInfo("Check your Supabase configuration:");
-                ConsoleHelper.WriteInfo("   • Verify SUPABASE_URL and SUPABASE_ANON_KEY");
-                ConsoleHelper.WriteInfo("   • Ensure 'c3d-files' bucket exists");
-                ConsoleHelper.WriteInfo("   • Verify user authentication in Supabase");
+                // For single-client runs, only one result is relevant
+                var clientName = httpSuccess ? "HTTP Client" : "Supabase Client";
+                var success = supabaseSuccess || httpSuccess;
+                Console.WriteLine(success ? $"✅ {clientName}: SUCCESS" : $"❌ {clientName}: FAILED");
+
+                if (success)
+                {
+                    Console.WriteLine("\n✅ 🎉 Client implementation works as expected !");
+                    Console.WriteLine("ℹ️ Patient files are properly organized in Supabase Storage");
+                }
+                else
+                {
+                    Console.WriteLine("\n❌ ❌ The client implementation failed.");
+                    Console.WriteLine("ℹ️ Review the logs above to diagnose the issue.");
+                }
             }
+            
+            Console.WriteLine("==================================================");
         }
     }
 }

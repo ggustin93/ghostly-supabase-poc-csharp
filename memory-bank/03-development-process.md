@@ -20,21 +20,21 @@
    - ✅ HTTP client implementation
    - ✅ Performance comparison
 
-#### Phase 2: Multi-Therapist RLS (Planned)
+#### Phase 2: Multi-Therapist RLS (✅ Completed)
 1. Database Setup
-   - Create tables (therapists, patients, sessions)
-   - Enable RLS on all tables
-   - Implement RLS policies
+   - ✅ Create tables (therapists, patients, sessions)
+   - ✅ Enable RLS on all tables
+   - ✅ Implement RLS policies
 
 2. Storage Enhancement
-   - Implement storage RLS policies
-   - Update folder structure
-   - Add access controls
+   - ✅ Implement storage RLS policies
+   - ✅ Update folder structure
+   - ✅ Add access controls
 
 3. Testing & Documentation
-   - Comprehensive RLS testing
-   - Performance analysis
-   - Security documentation
+   - ✅ Comprehensive RLS testing
+   - ✅ Performance analysis
+   - ✅ Security documentation
 
 ## Branching Strategy
 
@@ -137,10 +137,13 @@ dotnet run
 ```
 
 ### 2. RLS Testing
-1. Create test accounts
-2. Configure test data
-3. Run RLS test suite
-4. Verify access controls
+The project includes a comprehensive, automated RLS test suite (`MultiTherapistRlsTests.cs`) that is run by selecting option `5` from the main menu.
+
+The suite validates:
+1.  **Data Isolation**: Therapists can only access their own data.
+2.  **Storage Policies**: Therapists are blocked from accessing files of other therapists' patients.
+3.  **End-to-End Workflows**: Secure file upload, metadata creation, and download.
+4.  **Role Security**: Therapists cannot perform admin-level actions.
 
 ### 3. Performance Testing
 - File upload/download speeds
