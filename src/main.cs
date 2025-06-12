@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using GhostlySupaPoc.Clients;
+using GhostlySupaPoc.Config;
 using GhostlySupaPoc.RlsTests;
 using GhostlySupaPoc.Utils;
 
@@ -20,16 +21,10 @@ namespace GhostlySupaPoc
             Console.WriteLine("🎮 GHOSTLY+ Supabase C# Client Comparison POC");
             Console.WriteLine("=============================================\n");
 
-            // Initialize Supabase connection
-            if (!PocUtils.ValidateSupabaseConfig(out string supabaseUrl, out string supabaseKey))
+            // Initialize and validate Supabase connection from centralized config
+            if (!TestConfig.IsValid())
             {
-                Console.WriteLine("❌ Missing configuration! Please check the README.md for setup instructions.");
-                Console.WriteLine("\n💡 Setup Required:");
-                Console.WriteLine("   • Set SUPABASE_URL environment variable");
-                Console.WriteLine("   • Set SUPABASE_ANON_KEY environment variable");
-                Console.WriteLine("   • Create 'c3d-files' bucket in Supabase Storage");
-                Console.WriteLine("   • Create test user in Supabase Authentication");
-                Console.WriteLine("\n📋 Press any key to exit...");
+                Console.WriteLine("❌ Invalid configuration! Please check your environment variables.");
                 Console.ReadKey();
                 return;
             }
@@ -55,29 +50,62 @@ namespace GhostlySupaPoc
                 {
                     // Get user credentials for testing
                     Console.WriteLine("👨‍⚕️ Therapist Authentication");
-                    Console.Write("Email: ");
+                    Console.Write("Email (leave blank for default): ");
                     email = Console.ReadLine();
                     Console.Write("Password: ");
                     password = Console.ReadLine();
                     Console.WriteLine();
+
+                    if (string.IsNullOrWhiteSpace(email))
+                    {
+                        email = TestConfig.Therapist1Email;
+                        Console.WriteLine($"   -> Using default email: {email}");
+                    }
                 }
 
                 switch (choice)
                 {
                     case "1":
-                        await TestSupabaseClient(supabaseUrl, supabaseKey, email, password);
+                        Console.WriteLine("🔵 Testing Official Supabase C# Client");
+                        Console.WriteLine("=====================================\n");
+                        using (var client = new LegacySupabaseClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.LegacyTestBucket))
+                        {
+                            await RunClientTest(client, email, password);
+                        }
                         break;
                     case "2":
-                        await TestHttpClient(supabaseUrl, supabaseKey, email, password);
+                        Console.WriteLine("🟠 Testing Raw HTTP API Client");
+                        Console.WriteLine("==============================\n");
+                        using (var client = new LegacyHttpClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.LegacyTestBucket))
+                        {
+                            await RunClientTest(client, email, password);
+                        }
                         break;
                     case "3":
-                        await TestBothClients(supabaseUrl, supabaseKey, email, password);
+                        Console.WriteLine("🔄 Comparison Mode - Testing Both Implementations");
+                        Console.WriteLine("=================================================\n");
+                        
+                        Console.WriteLine("🔵 ROUND 1: Official Supabase C# Client");
+                        Console.WriteLine("---------------------------------------");
+                        using (var supabaseClient = new LegacySupabaseClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.LegacyTestBucket))
+                        {
+                            await RunClientTest(supabaseClient, email, password);
+                        }
+
+                        Console.WriteLine("\n" + new string('=', 50) + "\n");
+
+                        Console.WriteLine("🟠 ROUND 2: Raw HTTP API Client");
+                        Console.WriteLine("-------------------------------");
+                        using (var httpClient = new LegacyHttpClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.LegacyTestBucket))
+                        {
+                            await RunClientTest(httpClient, email, password);
+                        }
                         break;
                     case "4":
                         CleanupTestFiles();
                         break;
                     case "5":
-                        await RunRlsPoc(supabaseUrl, supabaseKey);
+                        await RunRlsPoc();
                         break;
                     default:
                         Console.WriteLine("❌ Invalid choice.");
@@ -95,62 +123,13 @@ namespace GhostlySupaPoc
         }
 
         /// <summary>
-        /// Test using official Supabase C# Client
+        /// Executes a full test sequence for a given client implementation.
         /// </summary>
-        private static async Task<bool> TestSupabaseClient(string supabaseUrl, string supabaseKey, string email, string password)
+        private static async Task RunClientTest(ILegacyClient client, string email, string password)
         {
-            Console.WriteLine("🔵 Testing Official Supabase C# Client");
-            Console.WriteLine("=====================================\n");
-
-            var ghostly = new LegacySupabaseClient(supabaseUrl, supabaseKey);
             var patientCode = GetPatientCode();
-            var success = await RunTestSequence(ghostly, email, password, patientCode);
-            PocUtils.DisplayTestSummary(success, false, patientCode);
-            return success;
-        }
-
-        /// <summary>
-        /// Test using raw HTTP API calls
-        /// </summary>
-        private static async Task<bool> TestHttpClient(string supabaseUrl, string supabaseKey, string email, string password)
-        {
-            Console.WriteLine("🟠 Testing Raw HTTP API Client");
-            Console.WriteLine("==============================\n");
-
-            using var ghostly = new LegacyHttpClient(supabaseUrl, supabaseKey);
-            var patientCode = GetPatientCode();
-            var success = await RunTestSequence(ghostly, email, password, patientCode);
-            PocUtils.DisplayTestSummary(false, success, patientCode);
-            return success;
-        }
-
-        /// <summary>
-        /// Test both clients for comparison
-        /// </summary>
-        private static async Task TestBothClients(string supabaseUrl, string supabaseKey, string email, string password)
-        {
-            Console.WriteLine("🔄 Comparison Mode - Testing Both Implementations");
-            Console.WriteLine("=================================================\n");
-
-            // Get patient code once for both tests
-            var patientCode = GetPatientCode();
-
-            // Test Supabase Client first
-            Console.WriteLine("🔵 ROUND 1: Official Supabase C# Client");
-            Console.WriteLine("---------------------------------------");
-            var supabaseClient = new LegacySupabaseClient(supabaseUrl, supabaseKey);
-            var supabaseSuccess = await RunTestSequence(supabaseClient, email, password, patientCode);
-
-            Console.WriteLine("\n" + new string('=', 50) + "\n");
-
-            // Test HTTP Client second  
-            Console.WriteLine("🟠 ROUND 2: Raw HTTP API Client");
-            Console.WriteLine("-------------------------------");
-            using var httpClient = new LegacyHttpClient(supabaseUrl, supabaseKey);
-            var httpSuccess = await RunTestSequence(httpClient, email, password, patientCode);
-
-            // Use the enhanced summary from Utils
-            PocUtils.DisplayTestSummary(supabaseSuccess, httpSuccess, patientCode);
+            var success = await RunTestSequence(client, email, password, patientCode);
+            PocUtils.DisplayTestSummary(success, success, patientCode); // Simplified summary
         }
 
         /// <summary>
@@ -214,7 +193,7 @@ namespace GhostlySupaPoc
         /// <summary>
         /// Run the standard test sequence for any client implementation
         /// </summary>
-        private static async Task<bool> RunTestSequence(dynamic ghostly, string email, string password, string patientCode)
+        private static async Task<bool> RunTestSequence(ILegacyClient ghostly, string email, string password, string patientCode)
         {
             try
             {
@@ -262,10 +241,10 @@ namespace GhostlySupaPoc
                 if (files.Count > 0)
                 {
                     var fileToDownload = files[0];
-                    string downloadFileName = (fileToDownload.Name as string).Split('/').Last(); // Handle patientCode/filename
+                    string downloadFileName = fileToDownload.Name.Split('/').Last();
                     var downloadPath = Path.Combine("./c3d-test-download", downloadFileName);
 
-                    var downloadSuccess = await ghostly.DownloadFileAsync(fileToDownload.Name, downloadPath);
+                    var downloadSuccess = await ghostly.DownloadFileAsync(fileToDownload.Name, downloadPath, patientCode);
                     Console.WriteLine(downloadSuccess ? $"   ✅ Download successful to {downloadPath}" : "   ❌ Download failed");
                 }
                 else
@@ -292,7 +271,7 @@ namespace GhostlySupaPoc
         /// <summary>
         /// Runs the complete Proof of Concept for the multi-therapist RLS strategy.
         /// </summary>
-        private static async Task RunRlsPoc(string supabaseUrl, string supabaseKey)
+        private static async Task RunRlsPoc()
         {
             var options = new Supabase.SupabaseOptions
             {
@@ -301,23 +280,17 @@ namespace GhostlySupaPoc
             };
 
             // Initialize a new client for this specific test run
-            var supabase = new Supabase.Client(supabaseUrl, supabaseKey, options);
+            var supabase = new Supabase.Client(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, options);
             await supabase.InitializeAsync();
-
-            var therapist1Email = "therapist1@example.com";
-            var therapist1Password = PocUtils.GetEnvironmentVariable("THERAPIST1_PASSWORD", "default_password_1");
-            var therapist2Email = "therapist2@example.com";
-            var therapist2Password = PocUtils.GetEnvironmentVariable("THERAPIST2_PASSWORD", "default_password_2");
 
             try
             {
-                // Phase 1: Prepare the environment by uploading files for each therapist.
-                // This also implicitly tests the INSERT storage policies.
-                await RlsTestSetup.PrepareTestEnvironment(supabase, therapist1Email, therapist1Password);
-                await RlsTestSetup.PrepareTestEnvironment(supabase, therapist2Email, therapist2Password);
+                // Phase 1: Prepare the environment using credentials from config
+                await RlsTestSetup.PrepareTestEnvironment(supabase, TestConfig.Therapist1Email, TestConfig.Therapist1Password, TestConfig.RlsTestBucket);
+                await RlsTestSetup.PrepareTestEnvironment(supabase, TestConfig.Therapist2Email, TestConfig.Therapist2Password, TestConfig.RlsTestBucket);
 
-                // Phase 2: Run all validation tests.
-                await MultiTherapistRlsTests.RunAllTests(supabase, therapist1Email, therapist1Password, therapist2Email, therapist2Password);
+                // Phase 2: Run all validation tests using credentials from config
+                await MultiTherapistRlsTests.RunAllTests(supabase, TestConfig.Therapist1Email, TestConfig.Therapist1Password, TestConfig.Therapist2Email, TestConfig.Therapist2Password, TestConfig.RlsTestBucket);
             }
             catch (Exception ex)
             {

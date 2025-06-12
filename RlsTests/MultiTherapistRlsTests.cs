@@ -1,19 +1,21 @@
+using NUnit.Framework;
 using Supabase;
+using Supabase.Storage;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using GhostlySupaPoc.Models; // Use the centralized models
+using GhostlySupaPoc.Models;
 
 namespace GhostlySupaPoc.RlsTests
 {
     /// <summary>
-    /// Contains tests to validate the multi-therapist RLS policies.
-    /// These tests ensure that a therapist can only access data and files
-    /// belonging to patients explicitly assigned to them.
+    /// This class contains a suite of tests to validate the Row Level Security (RLS) policies
+    /// for the Supabase backend. It tests the ability of therapists to access and download
+    /// data belonging to patients explicitly assigned to them.
     /// </summary>
     public static class MultiTherapistRlsTests
     {
-        public static async Task RunAllTests(Client supabase, string therapist1Email, string therapist1Password, string therapist2Email, string therapist2Password)
+        public static async Task RunAllTests(Client supabase, string therapist1Email, string therapist1Password, string therapist2Email, string therapist2Password, string rlsTestBucket)
         {
             Console.WriteLine("\n\n=============================================");
             Console.WriteLine("= Starting Multi-Therapist RLS Validation Tests =");
@@ -21,14 +23,14 @@ namespace GhostlySupaPoc.RlsTests
 
             // --- Run tests for Therapist 1 ---
             await Test_CanAccessOwnData(supabase, therapist1Email, therapist1Password, "Therapist 1");
-            await Test_CanDownloadOwnFiles(supabase, therapist1Email, therapist1Password, "Therapist 1");
+            await Test_CanDownloadOwnFiles(supabase, therapist1Email, therapist1Password, "Therapist 1", rlsTestBucket);
             await Test_CannotAccessOthersData(supabase, therapist1Email, therapist1Password, "Therapist 1");
-            await Test_CannotDownloadOthersFiles(supabase, therapist1Email, therapist1Password, "Therapist 1", therapist2Email, therapist2Password);
+            await Test_CannotDownloadOthersFiles(supabase, therapist1Email, therapist1Password, "Therapist 1", therapist2Email, therapist2Password, rlsTestBucket);
 
             // --- Run tests for Therapist 2 ---
             // (In a real test suite, these would be separate tests, but for a POC, this is clear)
             await Test_CanAccessOwnData(supabase, therapist2Email, therapist2Password, "Therapist 2");
-            await Test_CanDownloadOwnFiles(supabase, therapist2Email, therapist2Password, "Therapist 2");
+            await Test_CanDownloadOwnFiles(supabase, therapist2Email, therapist2Password, "Therapist 2", rlsTestBucket);
 
             Console.WriteLine("\n\nRLS Validation Tests Completed.");
         }
@@ -57,7 +59,6 @@ namespace GhostlySupaPoc.RlsTests
             Console.WriteLine($"\n--- TEST: {therapistName} CANNOT access data from other therapists ---");
             await supabase.Auth.SignIn(email, password);
 
-            // This should return 0 patients, as the RLS policy on the server will override the filter.
             var patientResponse = await supabase.From<Patient>().Filter("last_name", Postgrest.Constants.Operator.Not, "eq", "Alpha").Get();
 
             if (!patientResponse.Models.Any())
@@ -71,7 +72,7 @@ namespace GhostlySupaPoc.RlsTests
             await supabase.Auth.SignOut();
         }
 
-        private static async Task Test_CanDownloadOwnFiles(Client supabase, string email, string password, string therapistName)
+        private static async Task Test_CanDownloadOwnFiles(Client supabase, string email, string password, string therapistName, string rlsTestBucket)
         {
             Console.WriteLine($"\n--- TEST: {therapistName} can download their own patient's files ---");
             await supabase.Auth.SignIn(email, password);
@@ -79,7 +80,7 @@ namespace GhostlySupaPoc.RlsTests
             var sessionResponse = await supabase.From<EmgSession>().Get();
             var session = sessionResponse.Models.First();
 
-            var fileBytes = await supabase.Storage.From("emg_data").Download(session.FilePath);
+            var fileBytes = await supabase.Storage.From(rlsTestBucket).Download(session.FilePath);
 
             if (fileBytes != null && fileBytes.Length > 0)
             {
@@ -92,28 +93,24 @@ namespace GhostlySupaPoc.RlsTests
             await supabase.Auth.SignOut();
         }
 
-        private static async Task Test_CannotDownloadOthersFiles(Client supabase, string attackerEmail, string attackerPassword, string attackerName, string victimEmail, string victimPassword)
+        private static async Task Test_CannotDownloadOthersFiles(Client supabase, string attackerEmail, string attackerPassword, string attackerName, string victimEmail, string victimPassword, string rlsTestBucket)
         {
             Console.WriteLine($"\n--- TEST: {attackerName} CANNOT download files of another therapist's patient ---");
 
-            // First, get the file path of the victim's file
             await supabase.Auth.SignIn(victimEmail, victimPassword);
             var victimSession = (await supabase.From<EmgSession>().Get()).Models.First();
             var victimFilePath = victimSession.FilePath;
             await supabase.Auth.SignOut();
             Console.WriteLine($"Obtained victim's file path: {victimFilePath}");
 
-            // Now, log in as the attacker and try to download it
             await supabase.Auth.SignIn(attackerEmail, attackerPassword);
             try
             {
-                await supabase.Storage.From("emg_data").Download(victimFilePath);
-                // If we get here, the download succeeded, which is a security failure.
+                await supabase.Storage.From(rlsTestBucket).Download(victimFilePath);
                 throw new Exception($"SECURITY FAILURE: {attackerName} was able to download file '{victimFilePath}' which belongs to another therapist.");
             }
             catch (Supabase.Storage.Exceptions.StorageException ex)
             {
-                // We expect a specific error, usually "The resource was not found" or a 4xx error.
                 Console.WriteLine($"SUCCESS: {attackerName} was correctly blocked from downloading the file. Received expected error: {ex.Message}");
             }
             catch(Exception e)
@@ -126,4 +123,4 @@ namespace GhostlySupaPoc.RlsTests
             }
         }
     }
-} 
+}

@@ -14,10 +14,10 @@ namespace GhostlySupaPoc.Clients
     /// GHOSTLY+ HTTP POC with patient subfolder management
     /// Clean version using raw HTTP API calls to Supabase
     /// </summary>
-    public class LegacyHttpClient : IDisposable
+    public class LegacyHttpClient : IDisposable, ILegacyClient
     {
         // 🗂️ BUCKET CONFIGURATION
-        private const string BUCKET_NAME = "c3d-files";
+        private readonly string _bucketName;
 
         private readonly HttpClient _httpClient;
         private readonly string _supabaseUrl;
@@ -28,10 +28,11 @@ namespace GhostlySupaPoc.Clients
         // JSON options with custom DateTime handling
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public LegacyHttpClient(string supabaseUrl, string supabaseKey)
+        public LegacyHttpClient(string supabaseUrl, string supabaseKey, string bucketName)
         {
             _supabaseUrl = supabaseUrl.TrimEnd('/');
             _supabaseKey = supabaseKey;
+            _bucketName = bucketName;
 
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
@@ -59,7 +60,7 @@ namespace GhostlySupaPoc.Clients
                 _isAuthenticated = false;
                 _httpClient.DefaultRequestHeaders.Remove("Authorization");
 
-                var listUrl = $"{_supabaseUrl}/storage/v1/object/list/{BUCKET_NAME}";
+                var listUrl = $"{_supabaseUrl}/storage/v1/object/list/{_bucketName}";
 
                 var unauthRequest = new HttpRequestMessage(HttpMethod.Post, listUrl);
                 unauthRequest.Headers.Add("apikey", _supabaseKey);
@@ -190,18 +191,18 @@ namespace GhostlySupaPoc.Clients
 
                 var fileBytes = await File.ReadAllBytesAsync(localFilePath);
 
-                var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{BUCKET_NAME}/{fileName}";
+                var uploadUrl = $"{_supabaseUrl}/storage/v1/object/{_bucketName}/{fileName}";
 
                 var response = await _httpClient.PutAsync(uploadUrl, new ByteArrayContent(fileBytes));
 
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"   ✅ Uploaded to: {BUCKET_NAME}/{fileName}");
+                    Console.WriteLine($"   ✅ Uploaded to: {_bucketName}/{fileName}");
 
                     return new FileUploadResult
                     {
                         FileName = fileName,
-                        FilePath = $"{BUCKET_NAME}/{fileName}",
+                        FilePath = $"{_bucketName}/{fileName}",
                         FileSize = fileInfo.Length,
                         UploadedAt = DateTime.UtcNow,
                         PatientCode = patientCode
@@ -241,7 +242,7 @@ namespace GhostlySupaPoc.Clients
                     fullFileName = $"{patientCode}/{fileName}";
                 }
 
-                var downloadUrl = $"{_supabaseUrl}/storage/v1/object/{BUCKET_NAME}/{fullFileName}";
+                var downloadUrl = $"{_supabaseUrl}/storage/v1/object/{_bucketName}/{fullFileName}";
 
                 var response = await _httpClient.GetAsync(downloadUrl);
 
@@ -276,17 +277,17 @@ namespace GhostlySupaPoc.Clients
         /// <summary>
         /// List all files OR files for a specific patient
         /// </summary>
-        public async Task<List<StorageFile>> ListFilesAsync(string patientCode = null)
+        public async Task<List<ClientFile>> ListFilesAsync(string patientCode = null)
         {
             if (!_isAuthenticated)
             {
                 Console.WriteLine("   ❌ Not authenticated");
-                return new List<StorageFile>();
+                return new List<ClientFile>();
             }
 
             try
             {
-                var listUrl = $"{_supabaseUrl}/storage/v1/object/list/{BUCKET_NAME}";
+                var listUrl = $"{_supabaseUrl}/storage/v1/object/list/{_bucketName}";
 
                 var request = new HttpRequestMessage(HttpMethod.Post, listUrl);
                 request.Headers.Add("Authorization", $"Bearer {_accessToken}");
@@ -324,7 +325,7 @@ namespace GhostlySupaPoc.Clients
 
                             if (patientFolders.Count > 0)
                             {
-                                Console.WriteLine($"   📂 Found {patientFolders.Count} patient subfolders in bucket '{BUCKET_NAME}':");
+                                Console.WriteLine($"   📂 Found {patientFolders.Count} patient subfolders in bucket '{_bucketName}':");
                                 foreach (var folder in patientFolders)
                                 {
                                     Console.WriteLine($"      📁 {folder.name}");
@@ -342,7 +343,7 @@ namespace GhostlySupaPoc.Clients
 
                             if (patientFolders.Count == 0 && actualFiles.Count == 0)
                             {
-                                Console.WriteLine($"   📂 Bucket '{BUCKET_NAME}' is empty");
+                                Console.WriteLine($"   📂 Bucket '{_bucketName}' is empty");
                             }
                         }
                         else
@@ -354,26 +355,33 @@ namespace GhostlySupaPoc.Clients
                             }
                         }
 
-                        return files;
+                        // Map to the common ClientFile model
+                        return files.Select(f => new ClientFile
+                        {
+                            Name = f.name,
+                            Id = f.id,
+                            Size = f.size,
+                            CreatedAt = f.created_at
+                        }).ToList();
                     }
                     catch (JsonException ex)
                     {
                         Console.WriteLine($"   ⚠️ JSON parse error: {ex.Message}");
                         Console.WriteLine($"   📄 Raw response: {responseBody}");
-                        return new List<StorageFile>();
+                        return new List<ClientFile>();
                     }
                 }
                 else
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"   ❌ List error: {response.StatusCode} - {errorBody}");
-                    return new List<StorageFile>();
+                    return new List<ClientFile>();
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"   ❌ List error: {ex.Message}");
-                return new List<StorageFile>();
+                return new List<ClientFile>();
             }
         }
 

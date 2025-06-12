@@ -19,15 +19,15 @@ namespace GhostlySupaPoc.Clients
     /// Legacy Proof of Concept using the official Supabase C# client library
     /// This class retains the original POC logic for comparison purposes.
     /// </summary>
-    public class LegacySupabaseClient
+    public class LegacySupabaseClient : ILegacyClient
     {
         // 🗂️ BUCKET CONFIGURATION - Change this to test different buckets
-        private const string BUCKET_NAME = "c3d-files";
+        private readonly string _bucketName;
 
         private readonly Supabase.Client _supabase;
         private bool _isAuthenticated = false;
 
-        public LegacySupabaseClient(string supabaseUrl, string supabaseKey)
+        public LegacySupabaseClient(string supabaseUrl, string supabaseKey, string bucketName)
         {
             var options = new SupabaseOptions
             {
@@ -38,6 +38,7 @@ namespace GhostlySupaPoc.Clients
             };
 
             _supabase = new Supabase.Client(supabaseUrl, supabaseKey, options);
+            _bucketName = bucketName;
         }
 
         public async Task<bool> AuthenticateAsync(string email, string password)
@@ -101,7 +102,7 @@ namespace GhostlySupaPoc.Clients
 
                 // Upload to configured bucket with patient subfolder
                 var result = await _supabase.Storage
-                    .From(BUCKET_NAME)
+                    .From(_bucketName)
                     .Upload(fileBytes, filePath, new Supabase.Storage.FileOptions
                     {
                         ContentType = "text/plain"
@@ -109,7 +110,7 @@ namespace GhostlySupaPoc.Clients
 
                 if (!string.IsNullOrEmpty(result))
                 {
-                    Console.WriteLine($"   ✅ Uploaded: {filePath} (to bucket: {BUCKET_NAME})");
+                    Console.WriteLine($"   ✅ Uploaded: {filePath} (to bucket: {_bucketName})");
 
                     return new FileUploadResult
                     {
@@ -166,7 +167,7 @@ namespace GhostlySupaPoc.Clients
                 }
 
                 var fileBytes = await _supabase.Storage
-                    .From(BUCKET_NAME)
+                    .From(_bucketName)
                     .Download(downloadPath, (Supabase.Storage.TransformOptions)null, null);
 
                 // Ensure the directory exists before writing the file
@@ -191,7 +192,7 @@ namespace GhostlySupaPoc.Clients
         /// <summary>
         /// List files for a specific patient or all patients
         /// </summary>
-        public async Task<List<Supabase.Storage.FileObject>> ListFilesAsync(string patientCode = null)
+        public async Task<List<ClientFile>> ListFilesAsync(string patientCode = null)
         {
             if (!_isAuthenticated)
             {
@@ -208,23 +209,22 @@ namespace GhostlySupaPoc.Clients
                     // List files for specific patient
                     var patientFolder = patientCode; // Direct patient folder
                     files = await _supabase.Storage
-                        .From(BUCKET_NAME)
+                        .From(_bucketName)
                         .List(patientFolder);
 
-                    Console.WriteLine($"   📂 Found {files.Count} files for patient '{patientCode}' in bucket '{BUCKET_NAME}':");
+                    Console.WriteLine($"   📂 Found {files.Count} files for patient '{patientCode}' in bucket '{_bucketName}':");
                 }
                 else
                 {
                     // List all files and organize by patient folders
                     files = await _supabase.Storage
-                        .From(BUCKET_NAME)
+                        .From(_bucketName)
                         .List();
 
-                    Console.WriteLine($"   📂 Found {files.Count} total files/folders in bucket '{BUCKET_NAME}':");
+                    Console.WriteLine($"   📂 Found {files.Count} total files/folders in bucket '{_bucketName}':");
 
                     // Group and display by patient folders
                     await DisplayOrganizedFilesAsync(files);
-                    return files;
                 }
 
                 foreach (var file in files)
@@ -232,12 +232,19 @@ namespace GhostlySupaPoc.Clients
                     Console.WriteLine($"      📄 {file.Name}");
                 }
 
-                return files;
+                // Map to the common ClientFile model
+                return files.Select(f => new ClientFile
+                {
+                    Name = f.Name,
+                    Id = f.Id,
+                    Size = f.Metadata?.Size,
+                    CreatedAt = f.CreatedAt?.DateTime
+                }).ToList();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"   ❌ List error: {ex.Message}");
-                return new List<Supabase.Storage.FileObject>();
+                return new List<ClientFile>();
             }
         }
 
@@ -266,11 +273,11 @@ namespace GhostlySupaPoc.Clients
         {
             try
             {
-                Console.WriteLine($"🔒 RLS Test (using bucket: {BUCKET_NAME})");
+                Console.WriteLine($"🔒 RLS Test (using bucket: {_bucketName})");
 
                 // Test unauthenticated access - should see 0 files due to RLS policy
                 await _supabase.Auth.SignOut();
-                var unauthFiles = await _supabase.Storage.From(BUCKET_NAME).List();
+                var unauthFiles = await _supabase.Storage.From(_bucketName).List();
 
                 // Test authenticated access - should see actual files if any exist
                 if (!await AuthenticateAsync(email, password))
@@ -278,7 +285,7 @@ namespace GhostlySupaPoc.Clients
                     Console.WriteLine("   ❌ Authentication failed");
                     return false; // Early return on auth failure
                 }
-                var authFiles = await _supabase.Storage.From(BUCKET_NAME).List();
+                var authFiles = await _supabase.Storage.From(_bucketName).List();
 
                 // Analyze results - RLS working if unauthenticated sees 0, authenticated sees ≥0
                 Console.WriteLine($"   Unauthenticated: {unauthFiles.Count} files");
@@ -344,7 +351,7 @@ namespace GhostlySupaPoc.Clients
                     try
                     {
                         var patientFiles = await _supabase.Storage
-                            .From(BUCKET_NAME)
+                            .From(_bucketName)
                             .List(patientFolder);
 
                         foreach (var patientFile in patientFiles.OrderBy(x => x.Name))
@@ -367,6 +374,12 @@ namespace GhostlySupaPoc.Clients
                     Console.WriteLine($"      📄 {file.Name}");
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            // Nothing to dispose for the Supabase client in this context.
+            // Implemented to satisfy the ILegacyClient interface.
         }
     }
 }
