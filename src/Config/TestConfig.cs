@@ -5,7 +5,7 @@ namespace GhostlySupaPoc.Config
 {
     /// <summary>
     /// Centralized configuration class to manage all important variables for the POC.
-    /// Reads from environment variables and provides sensible defaults for testing.
+    /// Reads from environment variables and Repl.it secrets, and provides sensible defaults for testing.
     /// </summary>
     public static class TestConfig
     {
@@ -26,9 +26,18 @@ namespace GhostlySupaPoc.Config
         /// <summary>
         /// Static constructor to initialize configuration from environment variables.
         /// This runs once when the class is first accessed.
+        /// Configuration can be set through environment variables or Repl.it Secrets.
         /// </summary>
         static TestConfig()
         {
+            // Check if we're on Repl.it
+            bool isReplIt = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REPL_ID"));
+            
+            if (isReplIt)
+            {
+                Console.WriteLine("📌 Running on Repl.it - configuration should be set in Secrets tab (tools icon -> Secrets)");
+            }
+            
             // Load Supabase credentials with default values for development
             SupabaseUrl = PocUtils.GetEnvironmentVariable("SUPABASE_URL", "https://egihfsmxphqcsjotmhmm.supabase.co", required: false);
             SupabaseAnonKey = PocUtils.GetEnvironmentVariable("SUPABASE_ANON_KEY", "xxxx", required: false);
@@ -52,7 +61,21 @@ namespace GhostlySupaPoc.Config
         {
             if (string.IsNullOrEmpty(SupabaseUrl) || string.IsNullOrEmpty(SupabaseAnonKey))
             {
-                Console.WriteLine("❌ Missing configuration! SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
+                bool isReplIt = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REPL_ID"));
+                
+                if (isReplIt)
+                {
+                    Console.WriteLine("❌ Missing configuration! SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
+                    Console.WriteLine("   To configure on Repl.it:");
+                    Console.WriteLine("   1. Click on the tools icon in the left panel");
+                    Console.WriteLine("   2. Select 'Secrets'");
+                    Console.WriteLine("   3. Add SUPABASE_URL and SUPABASE_ANON_KEY with your values");
+                }
+                else
+                {
+                    Console.WriteLine("❌ Missing configuration! SUPABASE_URL and SUPABASE_ANON_KEY must be set.");
+                    Console.WriteLine("   Set these as environment variables or in a .env file");
+                }
                 return false;
             }
 

@@ -20,6 +20,9 @@ namespace GhostlySupaPoc
         {
             Console.WriteLine("🎮 GHOSTLY+ Supabase C# Client Comparison POC");
             Console.WriteLine("=============================================\n");
+            
+            // Try to load configuration from .env file for local development
+            DotEnv.Load();
 
             // Initialize and validate Supabase connection from centralized config
             if (!TestConfig.IsValid())

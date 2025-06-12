@@ -63,7 +63,21 @@ namespace GhostlySupaPoc.Utils
             {
                 if (required)
                 {
-                    throw new InvalidOperationException($"Required environment variable '{key}' is not set");
+                    // Check if we're on Repl.it
+                    bool isReplIt = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("REPL_ID"));
+                    
+                    if (isReplIt)
+                    {
+                        throw new InvalidOperationException(
+                            $"Required environment variable '{key}' is not set. " +
+                            $"Please add it in the Repl.it Secrets tab (tools icon -> Secrets)");
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            $"Required environment variable '{key}' is not set. " +
+                            $"Please set it in your environment or .env file");
+                    }
                 }
                 return defaultValue;
             }
