@@ -237,7 +237,7 @@ namespace GhostlySupaPoc.Clients
                 {
                     Name = f.Name,
                     Id = f.Id,
-                    Size = f.Size,
+                    Size = null, // Size information not directly available in FileObject
                     CreatedAt = f.CreatedAt
                 }).ToList();
             }

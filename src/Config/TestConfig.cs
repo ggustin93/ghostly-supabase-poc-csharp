@@ -29,9 +29,9 @@ namespace GhostlySupaPoc.Config
         /// </summary>
         static TestConfig()
         {
-            // Load Supabase credentials (required)
-            SupabaseUrl = PocUtils.GetEnvironmentVariable("SUPABASE_URL", required: true);
-            SupabaseAnonKey = PocUtils.GetEnvironmentVariable("SUPABASE_ANON_KEY", required: true);
+            // Load Supabase credentials with default values for development
+            SupabaseUrl = PocUtils.GetEnvironmentVariable("SUPABASE_URL", "https://egihfsmxphqcsjotmhmm.supabase.co", required: false);
+            SupabaseAnonKey = PocUtils.GetEnvironmentVariable("SUPABASE_ANON_KEY", "xxxx", required: false);
 
             // Load bucket names (with defaults)
             LegacyTestBucket = PocUtils.GetEnvironmentVariable("LEGACY_TEST_BUCKET", "c3d-files");
@@ -39,9 +39,9 @@ namespace GhostlySupaPoc.Config
 
             // Load therapist credentials (with defaults for easy testing)
             Therapist1Email = PocUtils.GetEnvironmentVariable("THERAPIST1_EMAIL", "therapist1@example.com");
-            Therapist1Password = PocUtils.GetEnvironmentVariable("THERAPIST1_PASSWORD", "default_password_1");
+            Therapist1Password = PocUtils.GetEnvironmentVariable("THERAPIST1_PASSWORD", "ghostly");
             Therapist2Email = PocUtils.GetEnvironmentVariable("THERAPIST2_EMAIL", "therapist2@example.com");
-            Therapist2Password = PocUtils.GetEnvironmentVariable("THERAPIST2_PASSWORD", "default_password_2");
+            Therapist2Password = PocUtils.GetEnvironmentVariable("THERAPIST2_PASSWORD", "ghostly");
         }
 
         /// <summary>
@@ -60,6 +60,18 @@ namespace GhostlySupaPoc.Config
             {
                 Console.WriteLine("❌ SUPABASE_URL must start with https://");
                 return false;
+            }
+            
+            // Check if we're using the default placeholder values
+            if (SupabaseUrl == "https://your-project-id.supabase.co" || 
+                SupabaseAnonKey == "your-anon-key-goes-here-for-testing")
+            {
+                Console.WriteLine("⚠️ Using default placeholder values for Supabase configuration.");
+                Console.WriteLine("⚠️ Please update with your actual Supabase URL and key for proper functionality.");
+                Console.WriteLine("⚠️ You can continue with the demo, but actual Supabase operations will fail.");
+                
+                // Return true to allow the application to proceed for demo purposes
+                return true;
             }
             
             return true;
