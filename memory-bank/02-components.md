@@ -102,12 +102,14 @@ public class EMGSession
 ```
 
 ### 2. RLS Test Suite
-**File**: `RLSTests.cs` (Planned)
-**Purpose**: Comprehensive RLS testing
-**Key Features**:
-- Database access tests
-- Storage access tests
-- Cross-therapist isolation tests
+**File**: `RlsTests/MultiTherapistRlsTests.cs`
+**Purpose**: Provides a comprehensive suite of tests to validate the Row-Level Security policies for the multi-therapist environment. It ensures that data access is strictly limited to authorized therapists.
+
+**Key Test Scenarios**:
+- **Data Isolation**: Verifies that a therapist can only access data (patients, sessions, files) belonging to them and is explicitly blocked from accessing data belonging to other therapists.
+- **File Access Control**: Confirms that storage policies correctly prevent unauthorized downloading and uploading of files, even if an attacker knows the direct path.
+- **End-to-End Workflow**: Tests the complete process of uploading a file, creating its metadata record in the database, and then successfully retrieving it, all while under RLS constraints.
+- **Role Security**: Ensures that users with a therapist role cannot perform actions reserved for administrators.
 
 ### 3. Database Operations
 **File**: `DatabaseOperations.cs` (Planned)

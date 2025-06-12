@@ -184,51 +184,72 @@ public async Task<List<EMGSession>> GetPatientSessionsAsync(string patientCode)
 
 ## RLS Policies
 
+The security of the application is enforced through a combination of database and storage-level Row-Level Security (RLS) policies. These policies ensure that therapists can only access data belonging to their assigned patients.
+
 ### Database RLS
 
-#### Therapist Profile Access
-```sql
-CREATE POLICY "therapist_own_profile" ON therapists
-    FOR ALL USING (auth.email() = email);
-```
+The database policies leverage a helper function, `public.get_current_therapist_id()`, which securely retrieves the `therapist_id` of the currently authenticated user.
 
-#### Patient Data Access
+#### Therapists Table
 ```sql
-CREATE POLICY "therapist_own_patients" ON patients
-    FOR ALL USING (
-        therapist_id = (
-            SELECT id FROM therapists WHERE email = auth.email()
-        )
-    );
+CREATE POLICY "Allow therapists to manage their own profile"
+ON public.therapists FOR ALL
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
 ```
+- **Rule**: A therapist can only view or modify their own record.
 
-#### Session Data Access
+#### Patients Table
 ```sql
-CREATE POLICY "therapist_patient_sessions" ON emg_sessions
-    FOR ALL USING (
-        therapist_id = (
-            SELECT id FROM therapists WHERE email = auth.email()
-        )
-        AND patient_id IN (
-            SELECT id FROM patients 
-            WHERE therapist_id = (
-                SELECT id FROM therapists WHERE email = auth.email()
-            )
-        )
-    );
+CREATE POLICY "Allow therapists to manage their assigned patients"
+ON public.patients FOR ALL
+USING (therapist_id = public.get_current_therapist_id())
+WITH CHECK (therapist_id = public.get_current_therapist_id());
 ```
+- **Rule**: A therapist can perform any action on patient records only if they are the assigned therapist.
+
+#### EMG Sessions Table
+```sql
+CREATE POLICY "Allow therapists to manage EMG sessions for assigned patients"
+ON public.emg_sessions FOR ALL
+USING (
+    patient_id IN (
+        SELECT id FROM public.patients
+        WHERE therapist_id = public.get_current_therapist_id()
+    )
+)
+WITH CHECK (
+    patient_id IN (
+        SELECT id FROM public.patients
+        WHERE therapist_id = public.get_current_therapist_id()
+    )
+);
+```
+- **Rule**: A therapist can manage session records only if the session belongs to one of their assigned patients.
 
 ### Storage RLS
 
-#### File Access Policy
+Storage policies rely on the `public.is_assigned_to_patient(patient_code)` helper function to verify access rights based on the folder structure. The file path is expected to be in the format `{patient_code}/{filename}`.
+
+#### File Access Policies (`emg_data` bucket)
 ```sql
-((storage.foldername(name))[1] IN (
-    SELECT p.patient_code 
-    FROM patients p
-    JOIN therapists t ON t.id = p.therapist_id
-    WHERE t.email = auth.email()
-))
+-- This policy covers SELECT (download/list) operations.
+CREATE POLICY "Allow therapists to access files for assigned patients"
+ON storage.objects FOR SELECT
+USING (
+    bucket_id = 'emg_data' AND
+    public.is_assigned_to_patient((storage.foldername(name))[1])
+);
+
+-- This policy covers INSERT operations.
+CREATE POLICY "Allow therapists to upload files for assigned patients"
+ON storage.objects FOR INSERT
+WITH CHECK (
+    bucket_id = 'emg_data' AND
+    public.is_assigned_to_patient((storage.foldername(name))[1])
+);
 ```
+- **Rule**: Therapists can only perform actions (view, upload, update, delete) on files within a folder that matches the `patient_code` of an assigned patient. Additional policies for `UPDATE` and `DELETE` follow the same pattern.
 
 ## Error Handling
 

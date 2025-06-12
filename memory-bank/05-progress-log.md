@@ -219,6 +219,19 @@
     - **Improved Test Filenames:** The automated tests now generate files with more descriptive names (e.g., `P001_C3D-Test_20231027_123000.c3d`) for easier debugging.
 - **Outcome:** The application is now more secure, with properly isolated patient data. The use of readable IDs and filenames significantly improves the developer experience and makes the system easier to debug and maintain. The core RLS testing framework is robust and validates the correct security behavior.
 
+### Session: 2025-06-12 (RLS and Auth Debugging)
+- **Issue**: Encountered "new row violates row-level security policy" error during RLS tests.
+- **Analysis**:
+    - Initial fix attempt by modifying C# code failed because the root cause was in the SQL policy.
+    - The RLS policy for `emg_sessions` was missing a `WITH CHECK` clause, causing `INSERT` operations to fail by default.
+- **Fix**:
+    - Corrected the `emg_sessions` policy in `01_init_schema.sql` to include the required `WITH CHECK` clause.
+    - Reverted incorrect C# code changes that were causing a `therapist_id` column not found error.
+- **Issue**: Authentication was failing when running tests with default credentials.
+- **Analysis**: The program logic prompted for a password but had no fallback, causing it to use an empty string when the user pressed Enter.
+- **Fix**: Added logic to `src/main.cs` to use the default password from the configuration if the password field is left blank.
+- **Documentation**: Updated the memory bank (`04-api-documentation.md` and `02-components.md`) with the final, correct RLS policies and a summary of the comprehensive RLS test coverage.
+
 ## Scope and Outcome
 - **Scope:** Initial setup of five core Memory Bank documents.
 - **Outcome:** The Memory Bank is now active and provides essential context for future development. 

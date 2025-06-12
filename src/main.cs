@@ -66,6 +66,11 @@ namespace GhostlySupaPoc
                         email = TestConfig.Therapist1Email;
                         Console.WriteLine($"   -> Using default email: {email}");
                     }
+                    if (string.IsNullOrWhiteSpace(password))
+                    {
+                        password = TestConfig.Therapist1Password;
+                        Console.WriteLine($"   -> Using default password.");
+                    }
                 }
 
                 switch (choice)
@@ -90,11 +95,16 @@ namespace GhostlySupaPoc
                         Console.WriteLine("🔄 Comparison Mode - Testing Both Implementations");
                         Console.WriteLine("=================================================\n");
                         
+                        // Get patient code once for both tests
+                        var patientCode = GetPatientCode();
+                        bool supabaseSuccess = false;
+                        bool httpSuccess = false;
+
                         Console.WriteLine("🔵 ROUND 1: Official Supabase C# Client");
                         Console.WriteLine("---------------------------------------");
                         using (var supabaseClient = new LegacySupabaseClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.LegacyTestBucket))
                         {
-                            await RunClientTest(supabaseClient, email, password);
+                            supabaseSuccess = await RunTestSequence(supabaseClient, email, password, patientCode);
                         }
 
                         Console.WriteLine("\n" + new string('=', 50) + "\n");
@@ -103,8 +113,11 @@ namespace GhostlySupaPoc
                         Console.WriteLine("-------------------------------");
                         using (var httpClient = new LegacyHttpClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.LegacyTestBucket))
                         {
-                            await RunClientTest(httpClient, email, password);
+                           httpSuccess = await RunTestSequence(httpClient, email, password, patientCode);
                         }
+                        
+                        // Display a single, combined summary at the end of both rounds
+                        PocUtils.DisplayTestSummary(supabaseSuccess, httpSuccess, patientCode, isComparison: true);
                         break;
                     case "4":
                         CleanupTestFiles();
@@ -134,7 +147,14 @@ namespace GhostlySupaPoc
         {
             var patientCode = GetPatientCode();
             var success = await RunTestSequence(client, email, password, patientCode);
-            PocUtils.DisplayTestSummary(success, success, patientCode); // Simplified summary
+
+            // Determine which client ran to display the correct summary
+            var isSupabaseClient = client is LegacySupabaseClient;
+            PocUtils.DisplayTestSummary(
+                supabaseSuccess: isSupabaseClient && success, 
+                httpSuccess: !isSupabaseClient && success, 
+                patientCode: patientCode,
+                isComparison: false);
         }
 
         /// <summary>
