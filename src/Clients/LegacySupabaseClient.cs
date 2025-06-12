@@ -197,7 +197,7 @@ namespace GhostlySupaPoc.Clients
             if (!_isAuthenticated)
             {
                 Console.WriteLine("   ❌ Not authenticated");
-                return new List<Supabase.Storage.FileObject>();
+                return new List<ClientFile>();
             }
 
             try
@@ -237,8 +237,8 @@ namespace GhostlySupaPoc.Clients
                 {
                     Name = f.Name,
                     Id = f.Id,
-                    Size = f.Metadata?.Size,
-                    CreatedAt = f.CreatedAt?.DateTime
+                    Size = f.Size,
+                    CreatedAt = f.CreatedAt
                 }).ToList();
             }
             catch (Exception ex)

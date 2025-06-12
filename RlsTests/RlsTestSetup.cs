@@ -42,7 +42,7 @@ namespace GhostlySupaPoc.RlsTests
                 var fileContent = Encoding.UTF8.GetBytes($"This is a test EMG file for patient {patient.Id} at {DateTime.UtcNow}");
                 var memoryStream = new MemoryStream(fileContent);
 
-                await supabase.Storage.From(rlsTestBucket).Upload(memoryStream, filePathInBucket);
+                await supabase.Storage.From(rlsTestBucket).Upload(memoryStream.ToArray(), filePathInBucket);
                 Console.WriteLine($"Successfully uploaded file to: {filePathInBucket}");
 
                 var emgSession = new EmgSession

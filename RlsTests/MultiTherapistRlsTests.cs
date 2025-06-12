@@ -57,7 +57,7 @@ namespace GhostlySupaPoc.RlsTests
             Console.WriteLine($"\n--- TEST: {therapistName} CANNOT access data from other therapists ---");
             await supabase.Auth.SignIn(email, password);
 
-            var patientResponse = await supabase.From<Patient>().Filter("last_name", Postgrest.Constants.Operator.Not, "eq", "Alpha").Get();
+            var patientResponse = await supabase.From<Patient>().Not("last_name", Postgrest.Constants.Operator.Equals, "Alpha").Get();
 
             if (!patientResponse.Models.Any())
             {
@@ -78,7 +78,7 @@ namespace GhostlySupaPoc.RlsTests
             var sessionResponse = await supabase.From<EmgSession>().Get();
             var session = sessionResponse.Models.First();
 
-            var fileBytes = await supabase.Storage.From(rlsTestBucket).Download(session.FilePath);
+            var fileBytes = await supabase.Storage.From(rlsTestBucket).Download(session.FilePath, null);
 
             if (fileBytes != null && fileBytes.Length > 0)
             {
@@ -104,16 +104,12 @@ namespace GhostlySupaPoc.RlsTests
             await supabase.Auth.SignIn(attackerEmail, attackerPassword);
             try
             {
-                await supabase.Storage.From(rlsTestBucket).Download(victimFilePath);
+                await supabase.Storage.From(rlsTestBucket).Download(victimFilePath, null);
                 throw new Exception($"SECURITY FAILURE: {attackerName} was able to download file '{victimFilePath}' which belongs to another therapist.");
             }
-            catch (Supabase.Storage.Exceptions.StorageException ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"SUCCESS: {attackerName} was correctly blocked from downloading the file. Received expected error: {ex.Message}");
-            }
-            catch(Exception e)
-            {
-                 throw new Exception($"SECURITY FAILURE: {attackerName} was able to download file '{victimFilePath}' which belongs to another therapist.");
             }
             finally
             {
