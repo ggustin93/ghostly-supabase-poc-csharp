@@ -1,6 +1,4 @@
-using NUnit.Framework;
 using Supabase;
-using Supabase.Storage;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +13,7 @@ namespace GhostlySupaPoc.RlsTests
     /// </summary>
     public static class MultiTherapistRlsTests
     {
-        public static async Task RunAllTests(Client supabase, string therapist1Email, string therapist1Password, string therapist2Email, string therapist2Password, string rlsTestBucket)
+        public static async Task RunAllTests(Supabase.Client supabase, string therapist1Email, string therapist1Password, string therapist2Email, string therapist2Password, string rlsTestBucket)
         {
             Console.WriteLine("\n\n=============================================");
             Console.WriteLine("= Starting Multi-Therapist RLS Validation Tests =");
@@ -35,7 +33,7 @@ namespace GhostlySupaPoc.RlsTests
             Console.WriteLine("\n\nRLS Validation Tests Completed.");
         }
 
-        private static async Task Test_CanAccessOwnData(Client supabase, string email, string password, string therapistName)
+        private static async Task Test_CanAccessOwnData(Supabase.Client supabase, string email, string password, string therapistName)
         {
             Console.WriteLine($"\n--- TEST: {therapistName} can access their own data ---");
             await supabase.Auth.SignIn(email, password);
@@ -54,7 +52,7 @@ namespace GhostlySupaPoc.RlsTests
             await supabase.Auth.SignOut();
         }
 
-        private static async Task Test_CannotAccessOthersData(Client supabase, string email, string password, string therapistName)
+        private static async Task Test_CannotAccessOthersData(Supabase.Client supabase, string email, string password, string therapistName)
         {
             Console.WriteLine($"\n--- TEST: {therapistName} CANNOT access data from other therapists ---");
             await supabase.Auth.SignIn(email, password);
@@ -72,7 +70,7 @@ namespace GhostlySupaPoc.RlsTests
             await supabase.Auth.SignOut();
         }
 
-        private static async Task Test_CanDownloadOwnFiles(Client supabase, string email, string password, string therapistName, string rlsTestBucket)
+        private static async Task Test_CanDownloadOwnFiles(Supabase.Client supabase, string email, string password, string therapistName, string rlsTestBucket)
         {
             Console.WriteLine($"\n--- TEST: {therapistName} can download their own patient's files ---");
             await supabase.Auth.SignIn(email, password);
@@ -93,7 +91,7 @@ namespace GhostlySupaPoc.RlsTests
             await supabase.Auth.SignOut();
         }
 
-        private static async Task Test_CannotDownloadOthersFiles(Client supabase, string attackerEmail, string attackerPassword, string attackerName, string victimEmail, string victimPassword, string rlsTestBucket)
+        private static async Task Test_CannotDownloadOthersFiles(Supabase.Client supabase, string attackerEmail, string attackerPassword, string attackerName, string victimEmail, string victimPassword, string rlsTestBucket)
         {
             Console.WriteLine($"\n--- TEST: {attackerName} CANNOT download files of another therapist's patient ---");
 

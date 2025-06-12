@@ -11,8 +11,4 @@
     <PackageReference Include="supabase-csharp" Version="0.16.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="src\**\*.cs" />
-    <Compile Include="RlsTests\**\*.cs" />
-  </ItemGroup>
 </Project>

@@ -14,7 +14,7 @@ namespace GhostlySupaPoc.RlsTests
     /// </summary>
     public static class RlsTestSetup
     {
-        public static async Task PrepareTestEnvironment(Client supabase, string therapistEmail, string therapistPassword, string rlsTestBucket)
+        public static async Task PrepareTestEnvironment(Supabase.Client supabase, string therapistEmail, string therapistPassword, string rlsTestBucket)
         {
             Console.WriteLine($"\n--- Preparing test environment for: {therapistEmail} ---");
 
