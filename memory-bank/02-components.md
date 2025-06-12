@@ -1,0 +1,212 @@
+# Components Documentation
+
+## Core Components
+
+### 1. GhostlyPOC (Supabase Client Implementation)
+**File**: `GhostlySupaPOC.cs`
+**Purpose**: Implementation using official Supabase C# client
+**Key Features**:
+- Authentication handling
+- File operations with patient folders
+- RLS testing capabilities
+
+**Key Methods**:
+```csharp
+public async Task<bool> AuthenticateAsync(string email, string password)
+public async Task<FileUploadResult> UploadFileAsync(string patientCode, string localFilePath)
+public async Task<bool> DownloadFileAsync(string fileName, string localPath, string patientCode = null)
+public async Task<List<Supabase.Storage.FileObject>> ListFilesAsync(string patientCode = null)
+public async Task<bool> TestRLSProtectionAsync(string email, string password)
+```
+
+### 2. GhostlyHttpPOC (HTTP Client Implementation)
+**File**: `GhostlyHttpPOC.cs`
+**Purpose**: Raw HTTP implementation for comparison
+**Key Features**:
+- Direct API calls to Supabase
+- Custom JSON handling
+- Manual token management
+
+**Key Methods**:
+```csharp
+public async Task<bool> AuthenticateAsync(string email, string password)
+public async Task<FileUploadResult> UploadFileAsync(string patientCode, string localFilePath)
+public async Task<bool> DownloadFileAsync(string fileName, string localPath, string patientCode = null)
+public async Task<List<StorageFile>> ListFilesAsync(string patientCode = null)
+public async Task<bool> TestRLSProtectionAsync(string email, string password)
+```
+
+### 3. Utility Component
+**File**: `Utils.cs`
+**Purpose**: Shared functionality and helper methods
+**Key Features**:
+- Environment configuration
+- File operations
+- Test data generation
+
+**Key Methods**:
+```csharp
+public static bool ValidateSupabaseConfig(out string supabaseUrl, out string supabaseKey)
+public static async Task<string> CreateSampleC3DFileAsync(string patientCode, string outputDirectory = null)
+public static string GenerateTestPatientCode(string prefix = "P", int? number = null)
+public static void DisplayTestSummary(bool supabaseSuccess, bool httpSuccess, string patientCode)
+```
+
+### 4. Program Entry Point
+**File**: `main.cs`
+**Purpose**: Application orchestration and user interface
+**Key Features**:
+- Menu-driven interface
+- Test execution
+- Error handling
+
+**Key Methods**:
+```csharp
+public static async Task Main(string[] args)
+private static async Task<bool> TestSupabaseClient(string supabaseUrl, string supabaseKey, string email, string password)
+private static async Task<bool> TestHttpClient(string supabaseUrl, string supabaseKey, string email, string password)
+private static async Task TestBothClients(string supabaseUrl, string supabaseKey, string email, string password)
+```
+
+## Component Relationships
+
+```mermaid
+graph TD
+    Program[Program.cs] --> GhostlyPOC[GhostlySupaPOC.cs]
+    Program --> GhostlyHttp[GhostlyHttpPOC.cs]
+    Program --> Utils[Utils.cs]
+    
+    GhostlyPOC --> Utils
+    GhostlyHttp --> Utils
+    
+    subgraph "Client Implementations"
+        GhostlyPOC
+        GhostlyHttp
+    end
+    
+    subgraph "Shared Components"
+        Utils
+    end
+```
+
+## Planned Components (Phase 2)
+
+### 1. Data Models
+**File**: `Models.cs` (Planned)
+**Purpose**: Database entity representations
+**Key Classes**:
+```csharp
+public class Therapist
+public class Patient
+public class EMGSession
+```
+
+### 2. RLS Test Suite
+**File**: `RLSTests.cs` (Planned)
+**Purpose**: Comprehensive RLS testing
+**Key Features**:
+- Database access tests
+- Storage access tests
+- Cross-therapist isolation tests
+
+### 3. Database Operations
+**File**: `DatabaseOperations.cs` (Planned)
+**Purpose**: Database CRUD operations
+**Key Features**:
+- Patient management
+- Session tracking
+- Therapist operations
+
+## Component Interactions
+
+### Authentication Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Program
+    participant Client
+    participant Utils
+    participant Supabase
+    
+    User->>Program: Enter credentials
+    Program->>Utils: ValidateSupabaseConfig()
+    Utils-->>Program: Configuration valid
+    Program->>Client: AuthenticateAsync()
+    Client->>Supabase: Auth request
+    Supabase-->>Client: JWT token
+    Client-->>Program: Auth success
+    Program-->>User: Access granted
+```
+
+### File Operation Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant Program
+    participant Client
+    participant Utils
+    participant Supabase
+    
+    User->>Program: Select operation
+    Program->>Utils: Generate test data
+    Utils-->>Program: Test file ready
+    Program->>Client: Upload/Download/List
+    Client->>Supabase: File operation
+    Supabase-->>Client: Operation result
+    Client-->>Program: Operation status
+    Program-->>User: Display result
+```
+
+## Component Configuration
+
+### Environment Variables
+Required for component operation:
+```bash
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_ANON_KEY="your-anon-key"
+```
+
+### File Paths
+Standard paths used by components:
+```
+./c3d-test-download/    # Download directory
+./sample_*.txt          # Generated test files
+```
+
+## Error Handling
+
+Each component implements specific error handling:
+
+### GhostlyPOC
+- Supabase client exceptions
+- Authentication failures
+- Storage operation errors
+
+### GhostlyHttpPOC
+- HTTP request failures
+- JSON parsing errors
+- Token management issues
+
+### Utils
+- Environment configuration errors
+- File operation failures
+- Test data generation issues
+
+## Testing Strategy
+
+Components are designed for testability:
+
+1. **Unit Tests** (Planned)
+   - Individual component testing
+   - Mock Supabase responses
+   - Error condition testing
+
+2. **Integration Tests** (Current)
+   - Cross-component operation
+   - Real Supabase interaction
+   - Performance comparison
+
+3. **RLS Tests** (Planned)
+   - Security policy verification
+   - Access control testing
+   - Edge case handling 

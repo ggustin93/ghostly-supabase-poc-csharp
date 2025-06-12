@@ -4,9 +4,15 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>GhostlySupaPoc</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="supabase-csharp" Version="0.16.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="src\**\*.cs" />
+    <Compile Include="RlsTests\**\*.cs" />
   </ItemGroup>
 </Project>
