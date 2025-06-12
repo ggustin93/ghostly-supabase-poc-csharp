@@ -1,0 +1,29 @@
+GHOSTLY+ Sample EMG Data
+Patient: P680
+Generated: 2025-06-11 14:00:48 UTC
+Sampling Rate: 1000 Hz
+Duration: 5 seconds
+Channels: Biceps, Triceps, Forearm
+
+Dummy Sample EMG readings:
+Time(s), Biceps(µV), Triceps(µV), Forearm(µV)
+0.000, 45.2, 32.1, 28.4
+0.001, 48.6, 35.4, 31.2
+0.002, 52.1, 29.8, 29.7
+0.003, 49.3, 38.7, 33.1
+0.004, 46.8, 33.2, 30.5
+0.005, 51.4, 31.9, 32.8
+0.006, 47.9, 36.3, 28.9
+0.007, 53.2, 34.1, 31.4
+0.008, 44.7, 37.8, 29.3
+0.009, 50.1, 30.6, 32.7
+
+--- Game Session Data ---
+Level: 1
+Score: 750
+Duration: 300 seconds
+Max Voluntary Contraction: 85%
+Total Contractions: 127
+Average Contraction Time: 2.3s
+Session Type: Autonomous Training
+Device: Android Tablet (GHOSTLY+ v1.2)
