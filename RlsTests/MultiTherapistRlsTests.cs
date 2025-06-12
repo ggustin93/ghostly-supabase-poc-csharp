@@ -43,6 +43,16 @@ namespace GhostlySupaPoc.RlsTests
             if (patientResponse.Models.Any() && sessionResponse.Models.Any())
             {
                 ConsoleHelper.WriteSuccess($"{therapistName} correctly fetched {patientResponse.Models.Count} patient(s) and {sessionResponse.Models.Count} session(s).");
+                
+                // Display patient info
+                var patient = patientResponse.Models.First();
+                ConsoleHelper.WriteInfo($"  │ Patient: {patient.FirstName} {patient.LastName} (ID: {patient.Id})");
+                
+                // Display session info 
+                var session = sessionResponse.Models.First();
+                ConsoleHelper.WriteInfo($"  │ Session ID: {session.Id}");
+                ConsoleHelper.WriteInfo($"  │ Recorded: {session.RecordedAt:yyyy-MM-dd HH:mm:ss}");
+                ConsoleHelper.WriteInfo($"  └ File: {session.FilePath}");
             }
             else
             {
@@ -82,6 +92,18 @@ namespace GhostlySupaPoc.RlsTests
             if (fileBytes != null && fileBytes.Length > 0)
             {
                 ConsoleHelper.WriteSuccess($"{therapistName} successfully downloaded file '{session.FilePath}'.");
+                
+                // Extract and display file contents for verification
+                var fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
+                var firstLines = fileContent.Split('\n').Take(4).ToArray();
+                
+                ConsoleHelper.WriteInfo($"  │ File Size: {fileBytes.Length} bytes");
+                ConsoleHelper.WriteInfo($"  │ Content Preview:");
+                foreach (var line in firstLines)
+                {
+                    ConsoleHelper.WriteInfo($"  │   {line}");
+                }
+                ConsoleHelper.WriteInfo($"  └ Successful Storage Access ✓");
             }
             else
             {

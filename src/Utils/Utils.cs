@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using GhostlySupaPoc.Models; // For FileUploadResult
+using GhostlySupaPoc.Config; // For TestConfig
+using GhostlySupaPoc.Utils; // For ConsoleHelper
 
 namespace GhostlySupaPoc.Utils
 {
@@ -261,43 +263,57 @@ Device: Android Tablet (GHOSTLY+ v1.2)
         /// <param name="patientCode">Patient code used in tests</param>
         public static void DisplayTestSummary(bool supabaseSuccess, bool httpSuccess, string patientCode)
         {
-            Console.WriteLine("\n" + new string('=', 60));
-            Console.WriteLine("*** GHOSTLY+ POC TEST SUMMARY ***");
-            Console.WriteLine(new string('=', 60));
+            Console.WriteLine();
+            ConsoleHelper.WriteMajorHeader("*** GHOSTLY+ POC TEST SUMMARY ***");
 
-            Console.WriteLine($"> Test Configuration:");
+            ConsoleHelper.WriteInfo($"Test Configuration:");
             Console.WriteLine($"   Patient Code: {patientCode}");
             Console.WriteLine($"   Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Console.WriteLine($"   Supabase URL: {TestConfig.SupabaseUrl}");
+            Console.WriteLine($"   Bucket: {TestConfig.LegacyTestBucket}");
             Console.WriteLine();
 
             Console.WriteLine($"> Results:");
-            Console.WriteLine($"   🔵 Supabase Client: {(supabaseSuccess ? "✅ SUCCESS" : "❌ FAILED")}");
-            Console.WriteLine($"   🟠 HTTP Client:     {(httpSuccess ? "✅ SUCCESS" : "❌ FAILED")}");
+            if (supabaseSuccess)
+                ConsoleHelper.WriteSuccess($"Supabase Client: SUCCESS");
+            else
+                ConsoleHelper.WriteError($"Supabase Client: FAILED");
+                
+            if (httpSuccess)
+                ConsoleHelper.WriteSuccess($"HTTP Client: SUCCESS");
+            else
+                ConsoleHelper.WriteError($"HTTP Client: FAILED");
+                
             Console.WriteLine();
 
             if (supabaseSuccess && httpSuccess)
             {
-                Console.WriteLine("🎉 Both implementations work as expected !");
-                Console.WriteLine($"📁 Patient {patientCode} files are properly organized in Supabase Storage");
+                ConsoleHelper.WriteSuccess("🎉 Both implementations work as expected !");
+                ConsoleHelper.WriteInfo($"Patient {patientCode} files are properly organized in Supabase Storage");
+                
+                // Display database information for reference
+                ConsoleHelper.WriteInfo("Database Information:");
+                ConsoleHelper.WriteInfo($"  │ Database URL: {TestConfig.SupabaseUrl}");
+                ConsoleHelper.WriteInfo($"  │ Storage Bucket: {TestConfig.LegacyTestBucket}");
+                ConsoleHelper.WriteInfo($"  │ Path Format: {patientCode}/<filename>");
+                ConsoleHelper.WriteInfo($"  └ RLS Enabled: Yes");
             }
             else if (supabaseSuccess || httpSuccess)
             {
-                Console.WriteLine("⚠️ PARTIAL SUCCESS - One implementation needs attention");
+                ConsoleHelper.WriteWarning("⚠️ PARTIAL SUCCESS - One implementation needs attention");
                 var working = supabaseSuccess ? "Supabase Client" : "HTTP Client";
                 var failing = supabaseSuccess ? "HTTP Client" : "Supabase Client";
-                Console.WriteLine($"✅ {working} is working perfectly");
-                Console.WriteLine($"❌ {failing} needs debugging - check logs above");
+                ConsoleHelper.WriteSuccess($"{working} is working perfectly");
+                ConsoleHelper.WriteError($"{failing} needs debugging - check logs above");
             }
             else
             {
-                Console.WriteLine("❌ CONFIGURATION ISSUE - Both implementations failed");
-                Console.WriteLine("💡 Check your Supabase configuration:");
-                Console.WriteLine("   • Verify SUPABASE_URL and SUPABASE_ANON_KEY");
-                Console.WriteLine("   • Ensure 'c3d-files' bucket exists");
-                Console.WriteLine("   • Verify user authentication in Supabase");
+                ConsoleHelper.WriteError("❌ CONFIGURATION ISSUE - Both implementations failed");
+                ConsoleHelper.WriteInfo("Check your Supabase configuration:");
+                ConsoleHelper.WriteInfo("   • Verify SUPABASE_URL and SUPABASE_ANON_KEY");
+                ConsoleHelper.WriteInfo("   • Ensure 'c3d-files' bucket exists");
+                ConsoleHelper.WriteInfo("   • Verify user authentication in Supabase");
             }
-
-            Console.WriteLine(new string('=', 60));
         }
     }
 }

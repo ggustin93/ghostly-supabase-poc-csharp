@@ -203,46 +203,74 @@ namespace GhostlySupaPoc
             try
             {
                 // Test 1: RLS Security Validation
-                Console.WriteLine("1️⃣ Security Test - RLS Protection");
+                ConsoleHelper.WriteHeader("1️⃣ Security Test - RLS Protection");
                 var rlsWorking = await ghostly.TestRLSProtectionAsync(email, password);
                 if (!rlsWorking)
                 {
-                    Console.WriteLine("   ❌ Authentication failed - cannot continue tests");
-                    Console.WriteLine("   💡 Please verify your credentials in Supabase Authentication");
+                    ConsoleHelper.WriteError("Authentication failed - cannot continue tests");
+                    ConsoleHelper.WriteInfo("Please verify your credentials in Supabase Authentication");
                     return false;
                 }
-                Console.WriteLine();
 
                 // Test 2: File Upload (with patient subfolder)
-                Console.WriteLine($"2️⃣ File Upload Test (Patient: {patientCode})");
+                ConsoleHelper.WriteHeader($"2️⃣ File Upload Test (Patient: {patientCode})");
                 var sampleFile = await PocUtils.CreateSampleC3DFileAsync(patientCode);
                 if (sampleFile != null)
                 {
                     var uploadResult = await ghostly.UploadFileAsync(patientCode, sampleFile);
-                    Console.WriteLine(uploadResult != null ? "   ✅ Upload successful" : "   ❌ Upload failed");
-
+                    
                     if (uploadResult != null)
                     {
-                        Console.WriteLine($"   📁 File stored in: {patientCode}/");
-                        Console.WriteLine($"   📄 Filename: {Path.GetFileName(uploadResult.FileName)}");
-                        Console.WriteLine($"   📊 Size: {uploadResult.FileSize} bytes");
+                        ConsoleHelper.WriteSuccess("Upload successful");
+                        ConsoleHelper.WriteInfo($"  │ File stored in: {patientCode}/");
+                        ConsoleHelper.WriteInfo($"  │ Filename: {Path.GetFileName(uploadResult.FileName)}");
+                        ConsoleHelper.WriteInfo($"  │ Size: {uploadResult.FileSize} bytes");
+                        ConsoleHelper.WriteInfo($"  │ Path: {uploadResult.FilePath}");
+                        ConsoleHelper.WriteInfo($"  └ Timestamp: {uploadResult.UploadedAt:yyyy-MM-dd HH:mm:ss}");
+                    }
+                    else
+                    {
+                        ConsoleHelper.WriteError("Upload failed");
                     }
                 }
                 else
                 {
-                    Console.WriteLine("   ❌ Failed to create sample file");
+                    ConsoleHelper.WriteError("Failed to create sample file");
                     return false;
                 }
-                Console.WriteLine();
 
                 // Test 3: File Listing (show patient folder structure)
-                Console.WriteLine($"3️⃣ File List Test (Patient: {patientCode})");
+                ConsoleHelper.WriteHeader($"3️⃣ File List Test (Patient: {patientCode})");
                 var files = await ghostly.ListFilesAsync(patientCode);
-                Console.WriteLine(files.Count > 0 ? "   ✅ Listing successful" : "   ⚠️ No files listed");
-                Console.WriteLine();
+                
+                if (files.Count > 0)
+                {
+                    ConsoleHelper.WriteSuccess($"Listing successful - Found {files.Count} file(s)");
+                    
+                    // Display file details for verification
+                    for (int i = 0; i < Math.Min(files.Count, 3); i++) // Show up to 3 files
+                    {
+                        var file = files[i];
+                        ConsoleHelper.WriteInfo($"  │ File {i+1}: {file.Name}");
+                        ConsoleHelper.WriteInfo($"  │   ID: {file.Id}");
+                        if (file.Size.HasValue)
+                            ConsoleHelper.WriteInfo($"  │   Size: {file.Size} bytes");
+                        if (file.CreatedAt.HasValue)
+                            ConsoleHelper.WriteInfo($"  │   Created: {file.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+                    }
+                    
+                    if (files.Count > 3)
+                        ConsoleHelper.WriteInfo($"  └ ... and {files.Count - 3} more file(s)");
+                    else
+                        ConsoleHelper.WriteInfo($"  └ End of file list");
+                }
+                else
+                {
+                    ConsoleHelper.WriteWarning("No files listed");
+                }
 
                 // Test 4: File Download
-                Console.WriteLine($"4️⃣ File Download Test (Patient: {patientCode})");
+                ConsoleHelper.WriteHeader($"4️⃣ File Download Test (Patient: {patientCode})");
                 if (files.Count > 0)
                 {
                     var fileToDownload = files[0];
@@ -250,25 +278,42 @@ namespace GhostlySupaPoc
                     var downloadPath = Path.Combine("./c3d-test-download", downloadFileName);
 
                     var downloadSuccess = await ghostly.DownloadFileAsync(fileToDownload.Name, downloadPath, patientCode);
-                    Console.WriteLine(downloadSuccess ? $"   ✅ Download successful to {downloadPath}" : "   ❌ Download failed");
+                    
+                    if (downloadSuccess)
+                    {
+                        ConsoleHelper.WriteSuccess($"Download successful");
+                        ConsoleHelper.WriteInfo($"  │ Source: {fileToDownload.Name}");
+                        ConsoleHelper.WriteInfo($"  │ Destination: {downloadPath}");
+                        
+                        // Show file info
+                        var fileInfo = new FileInfo(downloadPath);
+                        if (fileInfo.Exists)
+                        {
+                            ConsoleHelper.WriteInfo($"  │ Size: {fileInfo.Length} bytes");
+                            ConsoleHelper.WriteInfo($"  └ Created: {fileInfo.CreationTime:yyyy-MM-dd HH:mm:ss}");
+                        }
+                    }
+                    else
+                    {
+                        ConsoleHelper.WriteError("Download failed");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("   ⚠️ Skipping download test - no files to download");
+                    ConsoleHelper.WriteWarning("Skipping download test - no files to download");
                 }
-                Console.WriteLine();
 
                 // Test 5: Sign Out
-                Console.WriteLine("5️⃣ Sign Out Test");
+                ConsoleHelper.WriteHeader("5️⃣ Sign Out Test");
                 await ghostly.SignOutAsync();
-                Console.WriteLine();
+                ConsoleHelper.WriteSuccess("Successfully signed out");
 
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\n❌ Test Sequence Error: {ex.Message}");
-                Console.WriteLine($"💡 Stack trace: {ex.StackTrace}");
+                ConsoleHelper.WriteError($"Test Sequence Error: {ex.Message}");
+                ConsoleHelper.WriteInfo($"Stack trace: {ex.StackTrace}");
                 return false;
             }
         }

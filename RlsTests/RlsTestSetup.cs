@@ -36,26 +36,54 @@ namespace GhostlySupaPoc.RlsTests
                     ConsoleHelper.WriteWarning($"No patient found for {therapistEmail}. This might be expected if the therapist has no patients.");
                     return;
                 }
-                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName} (ID: {patient.Id})");
+                
+                // Display detailed patient information
+                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName}");
+                ConsoleHelper.WriteInfo($"  │ ID: {patient.Id}");
+                ConsoleHelper.WriteInfo($"  │ Created: {patient.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+                if (patient.TherapistId != null)
+                    ConsoleHelper.WriteInfo($"  └ Assigned to therapist: {patient.TherapistId}");
 
-                var fileName = $"test-session-{Guid.NewGuid()}.bin";
+                // Create a test file with a Guid for uniqueness
+                var sessionId = Guid.NewGuid();
+                var fileName = $"test-session-{sessionId}.bin";
                 var filePathInBucket = $"{patient.Id}/{fileName}";
-                var fileContent = Encoding.UTF8.GetBytes($"This is a test EMG file for patient {patient.Id} at {DateTime.UtcNow}");
+                
+                // Include session ID in file content for traceability
+                var fileContent = Encoding.UTF8.GetBytes(
+                    $"GHOSTLY+ Test EMG Data\n" +
+                    $"Patient ID: {patient.Id}\n" +
+                    $"Session ID: {sessionId}\n" +
+                    $"Created: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}\n" +
+                    $"Therapist: {therapistEmail}\n" +
+                    $"This is a test file created by the automated RLS validation tests."
+                );
                 var memoryStream = new MemoryStream(fileContent);
 
                 await supabase.Storage.From(rlsTestBucket).Upload(memoryStream.ToArray(), filePathInBucket);
                 ConsoleHelper.WriteSuccess($"Successfully uploaded file to: {filePathInBucket}");
+                ConsoleHelper.WriteInfo($"  │ Bucket: {rlsTestBucket}");
+                ConsoleHelper.WriteInfo($"  │ File Size: {fileContent.Length} bytes");
+                ConsoleHelper.WriteInfo($"  └ Session ID: {sessionId}");
 
                 var emgSession = new EmgSession
                 {
                     PatientId = patient.Id,
                     FilePath = filePathInBucket,
                     RecordedAt = DateTime.UtcNow,
-                    Notes = $"Test session created by automated setup for {therapistEmail}."
+                    Notes = $"Test session created by automated setup for {therapistEmail}. Session ID: {sessionId}"
                 };
 
-                await supabase.From<EmgSession>().Insert(emgSession);
+                var response = await supabase.From<EmgSession>().Insert(emgSession);
+                var createdSession = response.Models.FirstOrDefault();
+                
                 ConsoleHelper.WriteSuccess("Successfully created EMG session metadata record.");
+                if (createdSession != null)
+                {
+                    ConsoleHelper.WriteInfo($"  │ Session ID in DB: {createdSession.Id}");
+                    ConsoleHelper.WriteInfo($"  │ Recorded At: {createdSession.RecordedAt:yyyy-MM-dd HH:mm:ss}");
+                    ConsoleHelper.WriteInfo($"  └ File Path: {createdSession.FilePath}");
+                }
             }
             catch (Exception ex)
             {
