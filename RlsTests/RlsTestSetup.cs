@@ -40,9 +40,7 @@ namespace GhostlySupaPoc.RlsTests
                 // Display detailed patient information
                 ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName}");
                 ConsoleHelper.WriteInfo($"  │ ID: {patient.Id}");
-                ConsoleHelper.WriteInfo($"  │ Created: {patient.CreatedAt:yyyy-MM-dd HH:mm:ss}");
-                if (patient.TherapistId != null)
-                    ConsoleHelper.WriteInfo($"  └ Assigned to therapist: {patient.TherapistId}");
+                ConsoleHelper.WriteInfo($"  └ Assigned to therapist: {patient.TherapistId}");
 
                 // Create a test file with a Guid for uniqueness
                 var sessionId = Guid.NewGuid();
