@@ -68,8 +68,11 @@ namespace GhostlySupaPoc
             {
                 Console.WriteLine("Select Authentication Method:");
                 Console.WriteLine("  1. Enter credentials manually");
-                Console.WriteLine($"  2. Use pre-configured test user ({TestConfig.Therapist1Email})");
-                Console.Write("  Choice (1/2): ");
+                Console.WriteLine($"  2. Use pre-configured therapist user ({TestConfig.Therapist1Email})");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("  3. Use dedicated POC test user (poc-user@example.com)");
+                Console.ResetColor();
+                Console.Write("  Choice (1-3): ");
                 var authChoice = Console.ReadLine();
 
                 if (authChoice == "1")
@@ -86,6 +89,12 @@ namespace GhostlySupaPoc
                         ConsoleHelper.WriteError("Email and password cannot be empty for manual entry.");
                         return;
                     }
+                }
+                else if (authChoice == "3")
+                {
+                    email = "poc-user@example.com";
+                    password = "password123";
+                    Console.WriteLine($"\n-> Using dedicated POC user: {email}\n");
                 }
                 else
                 {
