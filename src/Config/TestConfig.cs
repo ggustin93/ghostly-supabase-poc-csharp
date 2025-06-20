@@ -18,8 +18,14 @@ namespace GhostlySupaPoc.Config
         public static string RlsTestBucket { get; }
 
         // Therapist Test Accounts
+        /// <summary>
+        /// The default user for running standard client tests.
+        /// </summary>
         public static string Therapist1Email { get; }
         public static string Therapist1Password { get; }
+        /// <summary>
+        /// The second user, primarily for testing cross-therapist RLS policies.
+        /// </summary>
         public static string Therapist2Email { get; }
         public static string Therapist2Password { get; }
         

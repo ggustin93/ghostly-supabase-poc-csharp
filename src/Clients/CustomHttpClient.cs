@@ -14,7 +14,7 @@ namespace GhostlySupaPoc.Clients
     /// GHOSTLY+ HTTP POC with patient subfolder management
     /// Clean version using raw HTTP API calls to Supabase
     /// </summary>
-    public class LegacyHttpClient : IDisposable, ILegacyClient
+    public class CustomHttpClient : IDisposable, ISupaClient
     {
         // 🗂️ BUCKET CONFIGURATION
         private readonly string _bucketName;
@@ -28,7 +28,7 @@ namespace GhostlySupaPoc.Clients
         // JSON options with custom DateTime handling
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public LegacyHttpClient(string supabaseUrl, string supabaseKey, string bucketName)
+        public CustomHttpClient(string supabaseUrl, string supabaseKey, string bucketName)
         {
             _supabaseUrl = supabaseUrl.TrimEnd('/');
             _supabaseKey = supabaseKey;
@@ -119,6 +119,10 @@ namespace GhostlySupaPoc.Clients
         /// </summary>
         public async Task<bool> AuthenticateAsync(string email, string password)
         {
+            // TODO: Implement token refresh logic. This client currently does not handle
+            // expired access tokens. For a production-ready implementation, the refresh_token
+            // should be securely stored and used to request a new access_token when the
+            // current one expires, preventing the user from being logged out unexpectedly.
             try
             {
                 var authUrl = $"{_supabaseUrl}/auth/v1/token?grant_type=password";
@@ -250,20 +254,21 @@ namespace GhostlySupaPoc.Clients
                 {
                     var fileBytes = await response.Content.ReadAsByteArrayAsync();
 
-                    // Ensure directory exists
-                    var directory = Path.GetDirectoryName(localPath);
-                    if (!string.IsNullOrEmpty(directory))
+                    // Ensure the directory exists
+                    var directoryName = Path.GetDirectoryName(localPath);
+                    if (!string.IsNullOrEmpty(directoryName))
                     {
-                        Directory.CreateDirectory(directory);
+                        Directory.CreateDirectory(directoryName);
                     }
 
                     await File.WriteAllBytesAsync(localPath, fileBytes);
-                    Console.WriteLine($"   ✅ Downloaded: {fullFileName} ({fileBytes.Length} bytes)");
+                    Console.WriteLine($"   ✅ Downloaded to: {localPath}");
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine($"   ❌ Download failed: {response.StatusCode}");
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"   ❌ Download failed: {response.StatusCode} - {errorBody}");
                     return false;
                 }
             }
@@ -275,7 +280,7 @@ namespace GhostlySupaPoc.Clients
         }
 
         /// <summary>
-        /// List all files OR files for a specific patient
+        /// List files in patient's subfolder, or root if no patient specified
         /// </summary>
         public async Task<List<ClientFile>> ListFilesAsync(string patientCode = null)
         {
@@ -289,132 +294,112 @@ namespace GhostlySupaPoc.Clients
             {
                 var listUrl = $"{_supabaseUrl}/storage/v1/object/list/{_bucketName}";
 
-                var request = new HttpRequestMessage(HttpMethod.Post, listUrl);
-                request.Headers.Add("Authorization", $"Bearer {_accessToken}");
-                request.Headers.Add("apikey", _supabaseKey);
-
-                // 📁 PATIENT FILTERING: use prefix
-                var prefix = string.IsNullOrEmpty(patientCode) ? "" : $"{patientCode}/";
-
+                // Use patientCode as the prefix to list only files in that "subfolder"
                 var requestBody = new
                 {
-                    prefix = prefix,
+                    prefix = string.IsNullOrEmpty(patientCode) ? "" : patientCode.TrimEnd('/') + "/",
                     limit = 100,
                     offset = 0
                 };
 
                 var jsonBody = JsonSerializer.Serialize(requestBody);
-                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+                var request = new HttpRequestMessage(HttpMethod.Post, listUrl)
+                {
+                    Content = content
+                };
 
                 var response = await _httpClient.SendAsync(request);
+                var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseBody = await response.Content.ReadAsStringAsync();
-
                     try
                     {
-                        // Use custom JSON options with DateTime converter
                         var files = JsonSerializer.Deserialize<List<StorageFile>>(responseBody, _jsonOptions);
 
-                        if (string.IsNullOrEmpty(patientCode))
+                        var clientFiles = new List<ClientFile>();
+                        if (files != null)
                         {
-                            // Count actual files vs patient subfolders
-                            var actualFiles = files.FindAll(f => f.name.Contains("/"));
-                            var patientFolders = files.FindAll(f => !f.name.Contains("/"));
-
-                            if (patientFolders.Count > 0)
+                            foreach (var f in files)
                             {
-                                Console.WriteLine($"   📂 Found {patientFolders.Count} patient subfolders in bucket '{_bucketName}':");
-                                foreach (var folder in patientFolders)
+                                clientFiles.Add(new ClientFile
                                 {
-                                    Console.WriteLine($"      📁 {folder.name}");
-                                }
-                            }
-
-                            if (actualFiles.Count > 0)
-                            {
-                                Console.WriteLine($"   📄 Found {actualFiles.Count} files:");
-                                foreach (var file in actualFiles)
-                                {
-                                    Console.WriteLine($"      📄 {file.name} (created: {file.created_at:yyyy-MM-dd HH:mm})");
-                                }
-                            }
-
-                            if (patientFolders.Count == 0 && actualFiles.Count == 0)
-                            {
-                                Console.WriteLine($"   📂 Bucket '{_bucketName}' is empty");
+                                    Name = f.name,
+                                    Id = f.id,
+                                    Path = f.name, // HTTP API doesn't give a full path, just name
+                                    Size = f.size,
+                                    ContentType = f.metadata?.mimetype,
+                                    CreatedAt = f.created_at,
+                                    LastAccessedAt = f.last_accessed_at,
+                                    PatientCode = GetPatientCodeFromPath(f.name)
+                                });
                             }
                         }
-                        else
-                        {
-                            Console.WriteLine($"   📂 Found {files.Count} files for patient '{patientCode}':");
-                            foreach (var file in files)
-                            {
-                                Console.WriteLine($"      📄 {file.name} (created: {file.created_at:yyyy-MM-dd HH:mm})");
-                            }
-                        }
-
-                        // Map to the common ClientFile model
-                        return files.Select(f => new ClientFile
-                        {
-                            Name = f.name,
-                            Id = f.id,
-                            Size = f.size,
-                            CreatedAt = f.created_at
-                        }).ToList();
+                        return clientFiles;
                     }
-                    catch (JsonException ex)
+                    catch (Exception ex)
                     {
-                        Console.WriteLine($"   ⚠️ JSON parse error: {ex.Message}");
-                        Console.WriteLine($"   📄 Raw response: {responseBody}");
+                        Console.WriteLine($"   ❌ Error parsing file list: {ex.Message}");
+                        Console.WriteLine($"   Raw JSON: {responseBody}");
                         return new List<ClientFile>();
                     }
                 }
                 else
                 {
-                    var errorBody = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"   ❌ List error: {response.StatusCode} - {errorBody}");
+                    Console.WriteLine($"   ❌ Failed to list files: {response.StatusCode} - {responseBody}");
                     return new List<ClientFile>();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"   ❌ List error: {ex.Message}");
+                Console.WriteLine($"   ❌ List files error: {ex.Message}");
                 return new List<ClientFile>();
             }
         }
-
+        
         /// <summary>
-        /// Sign out and clear authentication
+        /// Extracts the patient code from a file path (e.g., "P001/file.c3d" -> "P001")
         /// </summary>
-        public async Task SignOutAsync()
+        private string GetPatientCodeFromPath(string path)
         {
-            try
+            if (string.IsNullOrEmpty(path) || !path.Contains("/"))
             {
-                // Optional: call Supabase logout endpoint
-                if (_isAuthenticated && !string.IsNullOrEmpty(_accessToken))
-                {
-                    var logoutUrl = $"{_supabaseUrl}/auth/v1/logout";
-                    await _httpClient.PostAsync(logoutUrl, new StringContent("", Encoding.UTF8, "application/json"));
-                }
-
-                // Clear local authentication state
-                _accessToken = null;
-                _isAuthenticated = false;
-                _httpClient.DefaultRequestHeaders.Remove("Authorization");
-
-                Console.WriteLine("   ✅ Signed out successfully");
+                return null;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"   ⚠️ Sign out error: {ex.Message}");
-            }
+            return path.Split('/')[0];
         }
 
         /// <summary>
-        /// Dispose resources
+        /// Sign out and clear access token
         /// </summary>
+        public async Task SignOutAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                return;
+            }
+
+            try
+            {
+                var signOutUrl = $"{_supabaseUrl}/auth/v1/logout";
+                await _httpClient.PostAsync(signOutUrl, null);
+                Console.WriteLine("   ✅ Signed out successfully (HTTP Client)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   ❌ Sign out error: {ex.Message}");
+            }
+            finally
+            {
+                // Always clear local session
+                _accessToken = null;
+                _isAuthenticated = false;
+                _httpClient.DefaultRequestHeaders.Remove("Authorization");
+            }
+        }
+
         public void Dispose()
         {
             _httpClient?.Dispose();
