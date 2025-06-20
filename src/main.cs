@@ -166,7 +166,7 @@ namespace GhostlySupaPoc
         private static async Task ExecuteSingleClientTest(ClientType clientType, string email, string password)
         {
             var clientName = clientType == ClientType.Supabase ? "Official Supabase C# Client" : "Raw HTTP API Client";
-            var icon = clientType == ClientType.Supabase ? '🔵' : '🟠';
+            var icon = clientType == ClientType.Supabase ? "🔵" : "🟠";
 
             Console.WriteLine($"{icon} Testing {clientName}");
             Console.WriteLine(new string('=', 20 + clientName.Length) + "\n");
