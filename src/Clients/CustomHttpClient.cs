@@ -328,12 +328,8 @@ namespace GhostlySupaPoc.Clients
                                 {
                                     Name = f.name,
                                     Id = f.id,
-                                    Path = f.name, // HTTP API doesn't give a full path, just name
                                     Size = f.size,
-                                    ContentType = f.metadata?.mimetype,
-                                    CreatedAt = f.created_at,
-                                    LastAccessedAt = f.last_accessed_at,
-                                    PatientCode = GetPatientCodeFromPath(f.name)
+                                    CreatedAt = f.created_at
                                 });
                             }
                         }

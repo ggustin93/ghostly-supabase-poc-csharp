@@ -145,7 +145,7 @@ namespace GhostlySupaPoc.Clients
 
                 var fileBytes = await _supabase.Storage
                     .From(_bucketName)
-                    .Download(downloadPath, null, null);
+                    .Download(downloadPath, (Supabase.Storage.TransformOptions)null);
 
                 var directory = Path.GetDirectoryName(localPath);
                 if (!string.IsNullOrEmpty(directory))

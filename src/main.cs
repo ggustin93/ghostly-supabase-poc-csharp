@@ -5,6 +5,7 @@ using GhostlySupaPoc.Clients;
 using GhostlySupaPoc.Config;
 using GhostlySupaPoc.RlsTests;
 using GhostlySupaPoc.Utils;
+using Supabase;
 
 namespace GhostlySupaPoc
 {
@@ -328,19 +329,33 @@ namespace GhostlySupaPoc
         {
             Console.WriteLine("🚀 Running Multi-Therapist RLS Test Suite");
             Console.WriteLine("==========================================\n");
-            
-            var rlsTester = new MultiTherapistRlsTests(
-                TestConfig.SupabaseUrl,
-                TestConfig.SupabaseAnonKey,
-                TestConfig.RlsTestBucket
-            );
 
-            await rlsTester.RunAllTestsAsync(
-                TestConfig.Therapist1Email,
-                TestConfig.Therapist1Password,
-                TestConfig.Therapist2Email,
-                TestConfig.Therapist2Password
-            );
+            // The RLS test suite requires its own client instance to manage
+            // the authentication state of multiple users (therapists).
+            var options = new SupabaseOptions { AutoRefreshToken = true };
+            var rlsTestClient = new Client(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, options);
+            await rlsTestClient.InitializeAsync();
+            
+            try
+            {
+                // Prepare the test environment for both therapists
+                await RlsTestSetup.PrepareTestEnvironment(rlsTestClient, TestConfig.Therapist1Email, TestConfig.Therapist1Password, TestConfig.RlsTestBucket);
+                await RlsTestSetup.PrepareTestEnvironment(rlsTestClient, TestConfig.Therapist2Email, TestConfig.Therapist2Password, TestConfig.RlsTestBucket);
+
+                // Run the static test method with the dedicated client
+                await MultiTherapistRlsTests.RunAllTests(
+                    rlsTestClient,
+                    TestConfig.Therapist1Email,
+                    TestConfig.Therapist1Password,
+                    TestConfig.Therapist2Email,
+                    TestConfig.Therapist2Password,
+                    TestConfig.RlsTestBucket
+                );
+            }
+            catch (Exception ex)
+            {
+                ConsoleHelper.WriteError($"A critical error occurred during the RLS test suite: {ex.Message}");
+            }
         }
     }
 }
