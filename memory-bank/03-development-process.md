@@ -1,306 +1,79 @@
 # Development Process
 
-## Development Workflow
+This document outlines the standard development workflow, branching strategy, and commit guidelines for the GHOSTLY+ project.
 
-### 1. Development Phases
+---
 
-#### Phase 1: Initial POC (Current)
-1. Basic Setup
-   - ✅ Project initialization
-   - ✅ Supabase integration
-   - ✅ Environment configuration
+## 1. Development Workflow
+The development process follows a standard feature-branch workflow.
 
-2. Core Features
-   - ✅ Authentication implementation
-   - ✅ File storage operations
-   - ✅ Basic RLS testing
+1.  **Create an Issue**: Before starting work, ensure there is a corresponding issue that defines the feature or bug.
+2.  **Create a Branch**: Create a new branch from `main` using the naming convention below (e.g., `feature/add-new-test-case`).
+3.  **Implement Changes**: Write the code, ensuring it adheres to the project's coding standards and architectural patterns.
+4.  **Write or Update Tests**: All new features or bug fixes must be covered by corresponding tests. For security-related changes, update the RLS test suite.
+5.  **Update Documentation**: If the changes affect the system architecture, component interactions, or security model, update the relevant documents in the `/memory-bank`.
+6.  **Submit a Pull Request**: Push the branch and open a pull request, linking it to the original issue.
 
-3. Client Comparison
-   - ✅ Supabase SDK implementation
-   - ✅ HTTP client implementation
-   - ✅ Performance comparison
+---
 
-#### Phase 2: Multi-Therapist RLS (✅ Completed)
-1. Database Setup
-   - ✅ Create tables (therapists, patients, sessions)
-   - ✅ Enable RLS on all tables
-   - ✅ Implement RLS policies
+## 2. Branching & Commit Strategy
 
-2. Storage Enhancement
-   - ✅ Implement storage RLS policies
-   - ✅ Update folder structure
-   - ✅ Add access controls
+### Branching
+-   **`main`**: The primary branch containing stable, production-ready code.
+-   **`feature/*`**: For developing new features (e.g., `feature/add-reporting`).
+-   **`bugfix/*`**: For fixing bugs on released code (e.g., `bugfix/fix-auth-error`).
+-   **`refactor/*`**: For non-functional changes to improve code quality.
 
-3. Testing & Documentation
-   - ✅ Comprehensive RLS testing
-   - ✅ Performance analysis
-   - ✅ Security documentation
+### Commit Guidelines
+This project uses the [Conventional Commits](https://www.conventionalcommits.org/) specification. This creates a clear and explicit commit history.
 
-## Branching Strategy
+-   **Format**: `<type>(<scope>): <subject>`
+-   **Types**: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
+-   **Scope**: The part of the codebase affected (e.g., `auth`, `rls`, `docs`).
 
-### Main Branches
-- `main`: Production-ready code
-- `develop`: Development integration
-- `feature/*`: Individual features
-- `bugfix/*`: Bug fixes
-- `release/*`: Release preparation
-
-### Branch Naming Convention
+**Example Commit Message:**
 ```
-feature/add-rls-policies
-feature/multi-therapist-support
-bugfix/auth-token-refresh
-release/v1.0.0
+feat(storage): add file versioning policy
+
+Implements a new RLS policy to handle file versioning in the `emg_data` bucket. The policy ensures that therapists can only access the latest version of a file unless explicitly requested.
+
+- Adds a `version` column to the `storage.objects` metadata.
+- Updates the RLS security function to check for the version number.
 ```
 
-## Commit Guidelines
+---
 
-### Commit Message Format
-```
-<type>(<scope>): <subject>
+## 3. Testing Process
 
-<body>
+### Local Development & Testing
+All development and testing can be done locally using the .NET CLI.
 
-<footer>
-```
+1.  **Build the project**:
+    ```bash
+    dotnet build
+    ```
+2.  **Run the application**:
+    ```bash
+    dotnet run
+    ```
+    The interactive menu provides access to all test suites, including the critical **Multi-Therapist RLS Test Suite**.
 
-### Types
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation
-- `style`: Formatting
-- `refactor`: Code restructuring
-- `test`: Testing
-- `chore`: Maintenance
-
-### Example
-```
-feat(auth): implement multi-therapist authentication
-
-- Add therapist role validation
-- Implement session management
-- Update RLS policies
-
-Closes #123
-```
-
-## Development Environment Setup
-
-### Prerequisites
-1. Development Tools
-   ```bash
-   # Install .NET 7.0 SDK
-   brew install dotnet@7.0
-   
-   # Install Git
-   brew install git
-   ```
-
-2. Supabase Setup
-   ```bash
-   # Install Supabase CLI
-   brew install supabase/tap/supabase
-   
-   # Login to Supabase
-   supabase login
-   ```
-
-### Configuration
-1. Environment Variables
-   ```bash
-   # Development
-   export SUPABASE_URL="https://your-project.supabase.co"
-   export SUPABASE_ANON_KEY="your-anon-key"
-   
-   # Testing
-   export SUPABASE_TEST_EMAIL="test@example.com"
-   export SUPABASE_TEST_PASSWORD="your-test-password"
-   ```
-
-2. IDE Setup (VS Code)
-   ```json
-   {
-     "omnisharp.enableRoslynAnalyzers": true,
-     "omnisharp.enableEditorConfigSupport": true
-   }
-   ```
-
-## Testing Process
-
-### 1. Local Testing
+### Supabase Environment
+All migrations for setting up the database schema and RLS policies are located in the `/supabase/migrations` directory. To reset the remote database to a clean state for testing, use the Supabase CLI:
 ```bash
-# Build project
-dotnet build
-
-# Run tests
-dotnet run
+supabase db reset
 ```
 
-### 2. RLS Testing
-The project includes a comprehensive, automated RLS test suite (`MultiTherapistRlsTests.cs`) that is run by selecting option `5` from the main menu.
+---
 
-The suite validates:
-1.  **Data Isolation**: Therapists can only access their own data.
-2.  **Storage Policies**: Therapists are blocked from accessing files of other therapists' patients.
-3.  **End-to-End Workflows**: Secure file upload, metadata creation, and download.
-4.  **Role Security**: Therapists cannot perform admin-level actions.
+## 4. Code Review & Documentation
 
-### 3. Performance Testing
-- File upload/download speeds
-- Authentication response times
-- RLS policy impact
+### Code Review
+All pull requests require at least one approval. The review should focus on:
+-   **Correctness**: Does the code solve the problem?
+-   **Security**: Does it introduce any vulnerabilities? Are RLS policies respected?
+-   **Test Coverage**: Is the new code adequately tested?
+-   **Clarity**: Is the code and its documentation easy to understand?
 
-## Deployment Process
-
-### 1. Database Migration
-```sql
--- Apply schema changes
-BEGIN;
--- Run migration scripts
-COMMIT;
-```
-
-### 2. Storage Setup
-1. Create buckets
-2. Configure RLS policies
-3. Verify access patterns
-
-### 3. Application Deployment
-```bash
-# Build release
-dotnet publish -c Release
-
-# Deploy artifacts
-dotnet run --project <path-to-project>
-```
-
-## Code Review Process
-
-### Review Checklist
-1. Code Quality
-   - [ ] Follows C# conventions
-   - [ ] Proper error handling
-   - [ ] Efficient database queries
-   - [ ] RLS policy verification
-
-2. Security
-   - [ ] Authentication checks
-   - [ ] RLS policy testing
-   - [ ] Input validation
-   - [ ] Error message security
-
-3. Documentation
-   - [ ] Code comments
-   - [ ] API documentation
-   - [ ] Security notes
-   - [ ] Test coverage
-
-## Monitoring and Maintenance
-
-### 1. Performance Monitoring
-- Query execution times
-- File operation latency
-- Authentication response times
-
-### 2. Security Monitoring
-- Failed authentication attempts
-- RLS policy violations
-- Storage access patterns
-
-### 3. Error Tracking
-- Application exceptions
-- Database errors
-- Storage operation failures
-
-## Documentation Standards
-
-### 1. Code Documentation
-```csharp
-/// <summary>
-/// Uploads a file to patient's folder with RLS validation
-/// </summary>
-/// <param name="patientCode">Patient identifier</param>
-/// <param name="filePath">Local file path</param>
-/// <returns>Upload result with metadata</returns>
-```
-
-### 2. API Documentation
-- Endpoint descriptions
-- Request/response formats
-- Authentication requirements
-- RLS considerations
-
-### 3. Security Documentation
-- RLS policy documentation
-- Access control matrices
-- Security test results
-- Audit procedures
-
-## Issue Management
-
-### Issue Categories
-1. Feature Requests
-   - New functionality
-   - Enhancements
-   - Integration requests
-
-2. Bug Reports
-   - Security issues
-   - Functional bugs
-   - Performance problems
-
-3. Documentation
-   - Updates needed
-   - Clarifications
-   - Examples required
-
-### Issue Template
-```markdown
-## Description
-[Issue description]
-
-## Steps to Reproduce
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
-
-## Expected Behavior
-[What should happen]
-
-## Current Behavior
-[What actually happens]
-
-## Additional Context
-[Screenshots, logs, etc.]
-```
-
-## Release Process
-
-### 1. Pre-release Checklist
-- [ ] All tests passing
-- [ ] Documentation updated
-- [ ] RLS policies verified
-- [ ] Performance benchmarks met
-
-### 2. Release Steps
-1. Version bump
-2. Update changelog
-3. Create release branch
-4. Deploy database changes
-5. Deploy application
-6. Tag release
-
-### 3. Post-release
-- Monitor performance
-- Track error rates
-- Gather feedback
-- Plan next iteration 
-
-## Deployment
-Currently, this is a console application and does not have a formal deployment process. Future web or desktop versions will have მათი deployment strategies documented here.
-
-## Refactoring Strategy
-The project has evolved from a simple Proof of Concept to a more structured application. Key refactoring principles include:
-- **Separation of Concerns:** Code is organized into distinct layers (Models, Clients, Tests, Utils) to improve clarity and reduce coupling.
-- **Centralized Models:** All data structures are defined in a single `Models` directory to ensure consistency.
-- **Isolating Legacy Code:** The original POC client implementations are preserved but moved into a `Clients` directory to clearly separate them from the newer, more robust RLS implementation. This allows for continued comparison while focusing development on the new architecture. 
+### Documentation
+Documentation is a critical part of this project. Any changes that alter the system's behavior or structure **must** be reflected in the `/memory-bank` documentation. 

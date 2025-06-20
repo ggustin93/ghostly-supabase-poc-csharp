@@ -1,22 +1,36 @@
-# Project Overview
+# GHOSTLY+ Project Overview
 
-## Name
-GHOSTLY+ (Gamified Healthcare Optimization System with Therapist-Level Security)
+## 1. Project Description
+GHOSTLY+ is a .NET 7 Proof of Concept (POC) designed to validate the use of Supabase for building secure, multi-tenant medical applications. The core of the project is a console application that tests and demonstrates Supabase's capabilities for:
+-   **Authentication**: Secure sign-in for multiple therapist users.
+-   **Segregated Data Storage**: Using Supabase Storage and PostgreSQL to ensure patient data is strictly isolated between therapists.
+-   **Row-Level Security (RLS)**: Implementing database and storage policies to enforce the multi-tenant security model.
+-   **Client Implementation**: Comparing the official `supabase-csharp` client against a raw `HttpClient` implementation.
 
-## Description
-GHOSTLY+ is a medical application designed to manage EMG (Electromyography) data for multiple therapists and their patients. The system provides secure storage and access to medical data through Supabase, implementing strict Row-Level Security (RLS) to ensure data privacy and compliance with medical data handling requirements.
+## 2. Key Objectives & Scope
+The primary goal is to produce a well-documented, secure, and testable foundation for a multi-tenant medical application.
 
-The project starts as a Proof of Concept (POC) to evaluate Supabase's capabilities for:
-- Authentication and authorization
-- Secure file storage with patient-specific organization
-- Row-Level Security implementation for multi-therapist access control
-- Performance and scalability assessment
+-   **In Scope**:
+    -   Implementing a robust, test-driven RLS security model.
+    -   Comparing two different C# client implementations.
+    -   Creating comprehensive documentation for architecture, security, and setup.
 
-## Key Stakeholders
-- Therapists: Primary users who manage patient data and EMG sessions
-- Patients: Subjects whose medical data is being stored and analyzed
-- System Administrators: Manage user accounts and system configuration
-- Development Team: Implementing and maintaining the system
+-   **Out of Scope**:
+    -   A graphical user interface (GUI).
+    -   Advanced business logic beyond the core use case.
+    -   Production-ready deployment configurations.
+
+## 3. Technology Stack
+-   **Backend Platform**: Supabase (Authentication, PostgreSQL Database, Storage)
+-   **Language & Framework**: C# on .NET 7
+-   **Key Libraries**:
+    -   `supabase-csharp`: The official community client for Supabase.
+    -   `dotenv.net`: For managing environment variables in development.
+
+## 4. Key Stakeholders
+-   **Primary Users**: Therapists managing patient data.
+-   **System Administrators**: Responsible for user management and system configuration.
+-   **Development Team**: Responsible for implementing and maintaining the system.
 
 ## Timeline and Milestones
 Phase 1: Initial POC Development (Current)
@@ -29,25 +43,6 @@ Phase 2: Multi-Therapist RLS Implementation
 - Storage access control implementation
 - Comprehensive testing suite
 - Documentation and security review
-
-## Technology Stack
-### Backend
-- .NET 7.0
-- C# 
-- Supabase Platform
-  - Authentication
-  - Storage
-  - Database (PostgreSQL)
-  - Row Level Security
-
-### Libraries
-- supabase-csharp (v0.16.2)
-- System.Net.Http for raw API implementation
-
-### Development Tools
-- Visual Studio Code / Visual Studio
-- Git for version control
-- Supabase Dashboard for configuration
 
 ## Repository Structure
 The project has been refactored into a clean, feature-oriented structure.

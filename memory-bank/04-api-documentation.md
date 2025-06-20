@@ -1,4 +1,72 @@
-# API Documentation
+# API & Client Documentation
+
+This document provides an overview of the public-facing API exposed by the C# clients through the `ISupaClient` interface. Any class implementing this interface provides a consistent contract for interacting with the Supabase backend.
+
+---
+
+## `ISupaClient` Interface
+**File**: `src/Clients/ISupaClient.cs`
+
+This interface defines the core functionalities required for authentication and storage operations in this POC.
+
+### Authentication Methods
+
+---
+
+#### `Task<bool> AuthenticateAsync(string email, string password)`
+-   **Purpose**: Authenticates the user with the provided credentials.
+-   **Parameters**:
+    -   `email`: The user's email address.
+    -   `password`: The user's password.
+-   **Returns**: `true` if authentication is successful and a session is established; otherwise, `false`.
+
+---
+
+#### `Task SignOutAsync()`
+-   **Purpose**: Signs the current user out and clears the session.
+-   **Returns**: A `Task` that completes when the sign-out process is finished.
+
+---
+
+### Storage Methods
+
+---
+
+#### `Task<FileUploadResult> UploadFileAsync(string patientCode, string localFilePath)`
+-   **Purpose**: Uploads a file to a patient-specific folder in Supabase Storage.
+-   **Parameters**:
+    -   `patientCode`: The unique identifier for the patient, which will be used as the folder name.
+    -   `localFilePath`: The local path to the file to upload.
+-   **Returns**: A `FileUploadResult` object containing metadata about the successful upload; `null` if the upload fails.
+
+---
+
+#### `Task<bool> DownloadFileAsync(string fileName, string localPath, string patientCode = null)`
+-   **Purpose**: Downloads a file from a patient's folder in Supabase Storage.
+-   **Parameters**:
+    -   `fileName`: The name of the file to download (e.g., `P001_Test.txt`).
+    -   `localPath`: The full local path (including filename) where the file will be saved.
+    -   `patientCode`: The patient's code, used to locate the file in its subfolder.
+-   **Returns**: `true` if the download is successful; otherwise, `false`.
+
+---
+
+#### `Task<List<ClientFile>> ListFilesAsync(string patientCode = null)`
+-   **Purpose**: Lists all files within a specific patient's folder.
+-   **Parameters**:
+    -   `patientCode`: The patient's code, which corresponds to the folder to be listed.
+-   **Returns**: A `List<ClientFile>` containing metadata for each file in the folder. Returns an empty list if the folder is empty or not found.
+
+---
+
+### Security Methods
+
+---
+
+#### `Task<bool> TestRLSProtectionAsync(string email, string password)`
+-   **Purpose**: A diagnostic method to verify that RLS policies are effective.
+-   **Description**: This method first attempts to list files in an unauthenticated state (expecting 0 results), then authenticates and lists files again (expecting >0 results). It's a self-contained check to ensure RLS blocks anonymous access but permits authenticated access.
+-   **Returns**: `true` if the RLS policies behave as expected; otherwise, `false`.
 
 ## Authentication API
 

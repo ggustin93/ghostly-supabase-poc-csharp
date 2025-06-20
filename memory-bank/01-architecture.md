@@ -50,20 +50,15 @@ The Supabase platform organizes its functionality into several core database sch
 - **`auth`**: This schema contains all the data related to user authentication, including the `users` and `sessions` tables. You should not modify this schema directly, but you can securely join against the `auth.users` table in your RLS policies to get user information.
 - **`storage`**: This schema manages file storage metadata. It includes the `buckets` and `objects` tables. All RLS policies for controlling file access are applied to the `storage.objects` table.
 
-## Design Patterns
+## Design Patterns & Implementation
 
-### 1. Repository Pattern
-- Separation of data access logic
-- Implemented in both Supabase and HTTP clients
-- Consistent interface for storage operations
+### 1. Strategy Pattern
+-   **Description**: The project uses two different "strategies" for interacting with Supabase, allowing them to be used interchangeably.
+-   **Implementation**: The `ISupaClient` interface defines a common contract. `SupabaseClient` and `CustomHttpClient` provide the concrete strategy implementations. This allows the main test runner to switch between them easily.
 
 ### 2. Factory Pattern
-- Client initialization and configuration
-- Environment-based configuration management
-
-### 3. Strategy Pattern
-- Interchangeable storage access strategies
-- Allows comparison between Supabase SDK and HTTP approaches
+-   **Description**: A simple factory method is used to encapsulate the creation logic for the different client strategies.
+-   **Implementation**: The `CreateClient` method in `src/main.cs` acts as the factory, accepting a `ClientType` and returning the appropriate `ISupaClient` instance.
 
 ## Data Flow
 
