@@ -232,6 +232,22 @@
 - **Fix**: Added logic to `src/main.cs` to use the default password from the configuration if the password field is left blank.
 - **Documentation**: Updated the memory bank (`04-api-documentation.md` and `02-components.md`) with the final, correct RLS policies and a summary of the comprehensive RLS test coverage.
 
+### Session: 2025-06-20 (Advanced RLS Policy Debugging)
+- **Issue**: File uploads were failing with "new row violates row-level security policy" for the therapist user, even though they were authenticated and the policy seemed correct. The error only occurred in the client comparison test against the `c3d-files` bucket, while the more complex multi-therapist test against the `emg_data` bucket was succeeding.
+- **Analysis**:
+    1.  Initial investigation revealed a subtle but critical conflict between RLS policies. The policies for the `emg_data` bucket were incorrectly assigned to the `public` role instead of the `authenticated` role. This caused the database to evaluate both sets of policies for the therapist user, leading to a `false` result from the `emg_data` policy check when operating on the `c3d-files` bucket.
+    2.  After fixing the policy roles, the issue persisted. Further analysis of the C# code revealed a configuration error. The client factory method was hardcoded to use the bucket name configured for the RLS tests (`emg_data`) for *all* client instances, instead of using the correct bucket (`c3d-files`) for the comparison test.
+- **Fix**:
+    - **RLS Policies**: Replaced all `public` role policies with correctly scoped `authenticated` role policies, consolidating them for clarity and efficiency.
+    - **C# Code**: Refactored the `CreateClient` method in `src/main.cs` to accept a bucket name parameter. Updated the test execution logic to pass the correct bucket name depending on which test suite was being run.
+- **Outcome**: All tests now pass successfully. The RLS policies are clean and correctly scoped, and the client creation logic is robust. This session highlighted the importance of both correct RLS policy design and precise client-side configuration.
+- **Documentation**:
+    - Created a new, professional `README.md` with a clear project structure.
+    - Created a new `RLS_POLICY_SUMMARY.md` document and moved it into the Memory Bank (`06-rls-policy-summary.md`).
+    - Updated the architecture document (`01-architecture.md`) with an explanation of Supabase's core SQL schemas.
+    - Updated this progress log.
+    - Moved and revamped the `SECURITY_TESTS.md` report into the Memory Bank (`07-security-validation-report.md`).
+
 ## Scope and Outcome
 - **Scope:** Initial setup of five core Memory Bank documents.
 - **Outcome:** The Memory Bank is now active and provides essential context for future development. 

@@ -43,6 +43,13 @@ graph TD
    - Therapist-patient relationship management
    - EMG session tracking
 
+## Core Supabase Schemas
+The Supabase platform organizes its functionality into several core database schemas. Understanding their roles is key to working with the project.
+
+- **`public`**: This is the primary schema for your application's data. All custom tables, such as `therapists` and `patients`, are created here.
+- **`auth`**: This schema contains all the data related to user authentication, including the `users` and `sessions` tables. You should not modify this schema directly, but you can securely join against the `auth.users` table in your RLS policies to get user information.
+- **`storage`**: This schema manages file storage metadata. It includes the `buckets` and `objects` tables. All RLS policies for controlling file access are applied to the `storage.objects` table.
+
 ## Design Patterns
 
 ### 1. Repository Pattern

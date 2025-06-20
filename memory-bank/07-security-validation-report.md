@@ -1,6 +1,8 @@
-# GHOSTLY+ Security Validation Report
+# Security Validation Report
 
-This document outlines the security controls that have been validated through the automated test suite in this project. It is based directly on the implemented tests in `RlsTests/MultiTherapistRlsTests.cs` and the client-side security checks.
+**Document Purpose:** This document serves as a living reference of all security controls validated by the project's automated test suite. It provides a clear, evidence-based overview of the application's security posture.
+
+This report is based directly on the implemented tests in `RlsTests/MultiTherapistRlsTests.cs` and the client-side security checks. Each validated control links to the specific test case that provides the evidence.
 
 ---
 
@@ -94,4 +96,8 @@ The following are essential security measures that should be considered for a pr
   - [ ] **Type Validation**: Restrict uploads to specific, safe file extensions (e.g., `.c3d`).
   - [ ] **Size Validation**: Enforce a maximum file size to prevent resource exhaustion.
 - [ ] **Brute-Force Protection**: Investigate and confirm Supabase's built-in defenses against repeated failed login attempts.
-- [ ] **Dependency Vulnerability Scanning**: Integrate a tool like GitHub's Dependabot to automatically scan for vulnerabilities in third-party packages. 
+- [ ] **Dependency Vulnerability Scanning**: Integrate a tool like GitHub's Dependabot to automatically scan for vulnerabilities in third-party packages.
+
+---
+
+This validation report confirms that the core security principles of the application—particularly multi-tenant data isolation—are effectively implemented and tested. It should be updated whenever new security-related tests are added to the suite. 
