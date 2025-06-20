@@ -19,7 +19,7 @@ namespace GhostlySupaPoc.Clients
         // 🗂️ BUCKET CONFIGURATION
         private readonly string _bucketName;
 
-        private readonly HttpClient _httpClient;
+        private readonly System.Net.Http.HttpClient _httpClient;
         private readonly string _supabaseUrl;
         private readonly string _supabaseKey;
         private string _accessToken;
@@ -34,7 +34,7 @@ namespace GhostlySupaPoc.Clients
             _supabaseKey = supabaseKey;
             _bucketName = bucketName;
 
-            _httpClient = new HttpClient();
+            _httpClient = new System.Net.Http.HttpClient();
             _httpClient.DefaultRequestHeaders.Add("apikey", _supabaseKey);
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "GHOSTLY-Plus-HTTP-Client/1.0");
 
