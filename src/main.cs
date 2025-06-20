@@ -123,11 +123,11 @@ namespace GhostlySupaPoc
         /// <summary>
         /// Creates an instance of a client based on the specified type.
         /// </summary>
-        private static ISupaClient CreateClient(ClientType type)
+        private static ISupaClient CreateClient(ClientType type, string bucket)
         {
             return type == ClientType.Supabase
-                ? new SupabaseClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.RlsTestBucket)
-                : new CustomHttpClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, TestConfig.RlsTestBucket);
+                ? new SupabaseClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, bucket)
+                : new CustomHttpClient(TestConfig.SupabaseUrl, TestConfig.SupabaseAnonKey, bucket);
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace GhostlySupaPoc
 
             Console.WriteLine("🔵 ROUND 1: Official Supabase C# Client");
             Console.WriteLine("---------------------------------------");
-            using (var supabaseClient = CreateClient(ClientType.Supabase))
+            using (var supabaseClient = CreateClient(ClientType.Supabase, TestConfig.LegacyTestBucket))
             {
                 supabaseSuccess = await RunTestSequence(supabaseClient, email, password, patientCode);
             }
@@ -153,7 +153,7 @@ namespace GhostlySupaPoc
 
             Console.WriteLine("🟠 ROUND 2: Raw HTTP API Client");
             Console.WriteLine("-------------------------------");
-            using (var httpClient = CreateClient(ClientType.Http))
+            using (var httpClient = CreateClient(ClientType.Http, TestConfig.LegacyTestBucket))
             {
                 httpSuccess = await RunTestSequence(httpClient, email, password, patientCode);
             }
@@ -172,7 +172,7 @@ namespace GhostlySupaPoc
             Console.WriteLine($"{icon} Testing {clientName}");
             Console.WriteLine(new string('=', 20 + clientName.Length) + "\n");
 
-            using (var client = CreateClient(clientType))
+            using (var client = CreateClient(clientType, TestConfig.LegacyTestBucket))
             {
                 var patientCode = GetPatientCodeFromUser();
                 var success = await RunTestSequence(client, email, password, patientCode);
