@@ -267,6 +267,15 @@ namespace GhostlySupaPoc
                     return false;
                 }
 
+                // Re-authenticate before proceeding to ensure the session is active
+                ConsoleHelper.WriteHeader("Re-authenticating for subsequent tests");
+                if (!await client.AuthenticateAsync(email, password))
+                {
+                    ConsoleHelper.WriteError("Re-authentication failed. Aborting.");
+                    return false;
+                }
+                Console.WriteLine();
+
                 ConsoleHelper.WriteHeader($"3. File Upload Test (Patient: {patientCode})");
                 var sampleFile = await PocUtils.CreateSampleC3DFileAsync(patientCode);
                 if (string.IsNullOrEmpty(sampleFile)) return false;
