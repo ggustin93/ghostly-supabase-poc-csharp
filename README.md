@@ -72,6 +72,71 @@ The repository is organized to separate concerns.
 
 ---
 
+## Database Schema
+
+The architecture is composed of user authentication, a relational database, and file storage.
+
+**High-Level Data Flow**
+```mermaid
+graph LR
+    subgraph "User Authentication"
+        Auth["auth.users"]
+    end
+
+    subgraph "Application Database (PostgreSQL)"
+        Therapists["therapists"]
+        Patients["patients"]
+        EMGSessions["emg_sessions"]
+    end
+
+    subgraph "File Storage"
+        Storage["Supabase Storage (storage.objects)"]
+    end
+
+    Auth -- "1-to-1" --> Therapists
+    Therapists -- "1-to-N" --> Patients
+    Patients -- "1-to-N" --> EMGSessions
+    EMGSessions -- "references" --> Storage
+```
+
+**Entity-Relationship Diagram (ERD)**
+```mermaid
+erDiagram
+    therapists {
+        UUID id PK
+        UUID user_id FK
+        text first_name
+        text last_name
+        timestamptz created_at
+    }
+    patients {
+        UUID id PK
+        UUID therapist_id FK
+        text patient_code
+        text first_name
+        text last_name
+        date date_of_birth
+        timestamptz created_at
+    }
+    emg_sessions {
+        UUID id PK
+        UUID patient_id FK
+        text file_path
+        timestamptz recorded_at
+        text notes
+        timestamptz created_at
+    }
+    "auth.users" {
+        UUID id PK
+    }
+
+    therapists ||--o{ patients : "manages"
+    patients ||--o{ emg_sessions : "has"
+    "auth.users" |o--|| therapists : "is"
+```
+
+---
+
 ## Core Test Scenarios
 
 The application's main menu provides access to two validation suites:
