@@ -41,6 +41,14 @@ This interface defines the core functionalities required for authentication and 
 
 ---
 
+#### `Task<List<ClientFile>> ListFilesAsync(string patientCode = null)`
+-   **Purpose**: Lists all files within a specific patient's folder.
+-   **Parameters**:
+    -   `patientCode`: The patient's code, which corresponds to the folder to be listed.
+-   **Returns**: A `List<ClientFile>` containing metadata for each file in the folder. Returns an empty list if the folder is empty or not found.
+
+---
+
 #### `Task<bool> DownloadFileAsync(string fileName, string localPath, string patientCode = null)`
 -   **Purpose**: Downloads a file from a patient's folder in Supabase Storage.
 -   **Parameters**:
@@ -48,14 +56,6 @@ This interface defines the core functionalities required for authentication and 
     -   `localPath`: The full local path (including filename) where the file will be saved.
     -   `patientCode`: The patient's code, used to locate the file in its subfolder.
 -   **Returns**: `true` if the download is successful; otherwise, `false`.
-
----
-
-#### `Task<List<ClientFile>> ListFilesAsync(string patientCode = null)`
--   **Purpose**: Lists all files within a specific patient's folder.
--   **Parameters**:
-    -   `patientCode`: The patient's code, which corresponds to the folder to be listed.
--   **Returns**: A `List<ClientFile>` containing metadata for each file in the folder. Returns an empty list if the folder is empty or not found.
 
 ---
 
@@ -146,7 +146,7 @@ public async Task<bool> DownloadFileAsync(string fileName, string localPath, str
 **Endpoint**: `POST /storage/v1/object/list/{bucket}`
 **Implementation**:
 ```csharp
-public async Task<List<StorageFile>> ListFilesAsync(string patientCode = null)
+public async Task<List<ClientFile>> ListFilesAsync(string patientCode = null)
 ```
 
 **Request Body**:
@@ -172,35 +172,38 @@ public async Task<List<StorageFile>> ListFilesAsync(string patientCode = null)
 ]
 ```
 
-## Database API (Phase 2)
+## Database API
+
+This section documents the database interactions that are validated by the RLS test suite. The C# code uses the `postgrest-csharp` library (included in `supabase-csharp`) to perform these operations.
 
 ### Therapist Operations
 
 #### Get Therapist Profile
-**Endpoint**: `GET /rest/v1/therapists?email=eq.{email}`
-**Implementation**: (Planned)
+**Endpoint**: `GET /rest/v1/therapists?user_id=eq.{auth.uid()}`
+**Implementation**: Implicitly tested in `RlsTestSetup.cs` and used by RLS policies.
 ```csharp
-public async Task<Therapist> GetTherapistProfileAsync()
+// Example from tests:
+var therapist = (await supabase.From<Therapist>().Get()).Models.FirstOrDefault();
 ```
 
 **Response**:
 ```json
 {
     "id": "uuid",
-    "email": "string",
-    "name": "string",
-    "hospital": "string",
-    "created_at": "timestamp"
+    "user_id": "uuid",
+    "first_name": "string",
+    "last_name": "string"
 }
 ```
 
 ### Patient Operations
 
 #### List Therapist's Patients
-**Endpoint**: `GET /rest/v1/patients?therapist_id=eq.{id}`
-**Implementation**: (Planned)
+**Endpoint**: `GET /rest/v1/patients` (RLS policy applies `therapist_id=eq.{id}`)
+**Implementation**: Actively used in `MultiTherapistRlsTests.cs`.
 ```csharp
-public async Task<List<Patient>> GetMyPatientsAsync()
+// Example from tests:
+var patientResponse = await supabase.From<Patient>().Get();
 ```
 
 **Response**:
@@ -208,30 +211,23 @@ public async Task<List<Patient>> GetMyPatientsAsync()
 [
     {
         "id": "uuid",
-        "patient_code": "string",
         "therapist_id": "uuid",
-        "name": "string",
-        "age": 0,
-        "hospital": "string",
-        "created_at": "timestamp"
+        "patient_code": "string",
+        "first_name": "string",
+        "last_name": "string",
+        "date_of_birth": "date"
     }
 ]
-```
-
-#### Get Patient Details
-**Endpoint**: `GET /rest/v1/patients?patient_code=eq.{code}`
-**Implementation**: (Planned)
-```csharp
-public async Task<Patient> GetPatientDetailsAsync(string patientCode)
 ```
 
 ### EMG Session Operations
 
 #### List Patient Sessions
-**Endpoint**: `GET /rest/v1/emg_sessions?patient_id=eq.{id}`
-**Implementation**: (Planned)
+**Endpoint**: `GET /rest/v1/emg_sessions` (RLS policy applies)
+**Implementation**: Actively used in `MultiTherapistRlsTests.cs`.
 ```csharp
-public async Task<List<EMGSession>> GetPatientSessionsAsync(string patientCode)
+// Example from tests:
+var sessionResponse = await supabase.From<EmgSession>().Get();
 ```
 
 **Response**:
@@ -240,14 +236,19 @@ public async Task<List<EMGSession>> GetPatientSessionsAsync(string patientCode)
     {
         "id": "uuid",
         "patient_id": "uuid",
-        "therapist_id": "uuid",
         "file_path": "string",
-        "session_date": "timestamp",
-        "game_level": 0,
-        "score": 0,
-        "duration_minutes": 0
+        "recorded_at": "timestamp",
+        "notes": "string"
     }
 ]
+```
+
+#### Create EMG Session
+**Endpoint**: `POST /rest/v1/emg_sessions`
+**Implementation**: Actively used in `MultiTherapistRlsTests.cs`.
+```csharp
+// Example from tests:
+var response = await supabase.From<EmgSession>().Insert(emgSession);
 ```
 
 ## RLS Policies

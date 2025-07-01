@@ -1,43 +1,53 @@
 # GHOSTLY+ Supabase C# Proof of Concept
 
-This repository contains a .NET 7 console application designed to test and validate the use of [Supabase](https://supabase.com/) for building secure, multi-tenant applications. It provides a practical foundation for understanding Supabase's core features, particularly its powerful Row-Level Security (RLS) system.
+A .NET 7 console application that demonstrates a multi-tenant application structure using Supabase. The project focuses on Row-Level Security (RLS) for data segregation and compares two different C# clients for Supabase interaction.
 
-The project is structured around two primary goals:
-1.  **Client Implementation Comparison**: To analyze and compare the official `supabase-csharp` client against a raw C# `HttpClient` implementation for authentication and storage operations.
-2.  **RLS Policy Validation**: To provide a comprehensive test suite that validates a multi-therapist security model, ensuring that data access is strictly segregated between tenants.
+The repository includes:
+-   A multi-tenant RLS model for database and storage policies.
+-   A comparison between the `supabase-csharp` client and a raw `HttpClient` implementation.
+-   An automated test suite for validating the RLS policies.
+-   Detailed technical documentation in the `/memory-bank` directory.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- [.NET 7.0 SDK](https://dotnet.microsoft.com/download/dotnet/7.0)
-- A [Supabase](https://supabase.com/) account and a project.
-- [Supabase CLI](https://supabase.com/docs/guides/cli) (for managing database migrations).
+-   .NET 7.0 SDK
+-   A Supabase account and project.
+-   Supabase CLI.
 
 ### Configuration
-1.  **Clone & Configure**: Clone the repository and create a `.env` file in the root directory. Use `.env.example` as a template for your Supabase URL, anon key, and test user credentials.
-
-2.  **Database Setup**: Link your Supabase project and apply the database migrations using the Supabase CLI. This will create the necessary tables, RLS policies, and seed data.
+1.  **Clone the Repository**:
     ```bash
-    # Link your remote Supabase project (only needs to be done once)
+    git clone <repository-url>
+    cd ghostly-supabase-poc-csharp
+    ```
+
+2.  **Environment Variables**: Create a `.env` file in the project root using `.env.example` as a template. Fill in your project-specific details.
+
+3.  **Storage Buckets**: In your Supabase project dashboard, create two Storage buckets: `c3d-files` and `emg_data`.
+
+4.  **Database Migrations**: Link your Supabase project and run the local migrations to set up the schema, RLS policies, and seed data.
+    ```bash
+    # One-time setup
     supabase link --project-ref <your-project-ref>
 
-    # Apply all local migrations to a fresh database
+    # Wipes the remote database and applies all local migrations
     supabase db reset
     ```
 
 ### Running the Application
-Build and run the project from your terminal. The interactive menu will guide you through the available test suites.
+Build and run the project. The interactive menu provides access to the test suites.
 ```bash
 dotnet run
 ```
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
-The repository is organized to separate concerns, making it easy to navigate and understand the different components of the POC.
+The repository is organized to separate concerns.
 
 ```
 .
@@ -46,8 +56,8 @@ The repository is organized to separate concerns, making it easy to navigate and
 │   │   ├── SupabaseClient.cs   # Wrapper for the official `supabase-csharp` library.
 │   │   └── CustomHttpClient.cs # A raw HTTP client for direct API interaction.
 │   ├── Config/       # Manages environment variables and test configuration.
-│   ├── Models/       # C# data models (POCOs) for database tables.
-│   ├── RlsTests/     # The multi-therapist RLS test suite.
+│   ├── Models/       # C# data models (POCOs) for database tables and API responses.
+│   ├── RlsTests/     # The comprehensive multi-therapist RLS test suite.
 │   ├── Utils/        # Shared utility classes for helpers and exceptions.
 │   └── main.cs       # The application entry point and interactive menu.
 │
@@ -56,17 +66,22 @@ The repository is organized to separate concerns, making it easy to navigate and
 │
 ├── memory-bank/      # Contains detailed, long-term project documentation.
 │
-├── .env.example      # Example environment file.
-├── README.md         # This file.
-└── RLS_POLICY_SUMMARY.md # A detailed summary of the active RLS policies.
+├── .gitignore
+└── main.csproj
 ```
 
 ---
 
-## 🛡️ Core Test Scenarios
+## Core Test Scenarios
 
-The application's main menu provides access to two key testing scenarios:
+The application's main menu provides access to two validation suites:
 
-1.  **Client Comparison Mode**: This mode runs a sequence of tests (Authentication, RLS check, Upload, List, Download, Sign Out) for both the official and the raw HTTP clients against a general-purpose storage bucket (`c3d-files`). This is useful for comparing behavior and performance.
+1.  **Client Comparison Suite**: Runs a sequence of tests for both client implementations against the `c3d-files` storage bucket to compare behavior and performance.
 
-2.  **Multi-Therapist RLS Test Suite**: This is the primary security validation suite. It uses a dedicated, high-security bucket (`emg_data`) to run a series of tests that confirm a `therapist` user can *only* access data and files belonging to their explicitly assigned patients. It validates the core multi-tenant security model of the application. 
+2.  **Multi-Therapist RLS Suite**: Validates the core multi-tenant security model. It uses the `emg_data` bucket to confirm a `therapist` user can only access data and files belonging to their assigned patients.
+
+---
+
+## Documentation
+
+For details on the project's architecture, components, and security model, refer to the documentation in the `/memory-bank` directory. 
