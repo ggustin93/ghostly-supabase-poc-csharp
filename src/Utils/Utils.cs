@@ -268,7 +268,7 @@ Device: Android Tablet (GHOSTLY+ v1.2)
             Console.WriteLine($"   Patient Code: {patientCode}");
             Console.WriteLine($"   Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             Console.WriteLine($"   Supabase URL: {TestConfig.SupabaseUrl}");
-            Console.WriteLine($"   Bucket: {TestConfig.LegacyTestBucket}");
+            Console.WriteLine($"   Bucket: {TestConfig.TestBucket}");
             
             Console.WriteLine("\n> Results:");
 

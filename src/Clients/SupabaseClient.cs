@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Supabase;
 using GhostlySupaPoc.Models;
+using GhostlySupaPoc.Utils;
 
 namespace GhostlySupaPoc.Clients
 {
@@ -92,10 +93,23 @@ namespace GhostlySupaPoc.Clients
                     return null;
                 }
 
+                // Validate C3D file format
+                var validationResult = C3DValidator.ValidateC3DFile(localFilePath);
+                if (!validationResult.IsValid)
+                {
+                    Console.WriteLine($"   ❌ File validation failed: {validationResult}");
+                    return null;
+                }
+                
+                if (validationResult.Warnings.Any())
+                {
+                    Console.WriteLine($"   ⚠️ File validation warnings: {string.Join(", ", validationResult.Warnings)}");
+                }
+
                 var fileInfo = new FileInfo(localFilePath);
-                var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-                var fileName = $"{patientCode}_SUPABASE_{timestamp}.txt";
-                var filePath = $"{patientCode}/{fileName}";
+                // Preserve original filename to maintain embedded metadata (timestamps, etc.)
+                var originalFileName = fileInfo.Name;
+                var filePath = $"{patientCode}/{originalFileName}";
 
                 var fileBytes = await File.ReadAllBytesAsync(localFilePath);
 
@@ -103,14 +117,14 @@ namespace GhostlySupaPoc.Clients
                     .From(_bucketName)
                     .Upload(fileBytes, filePath, new Supabase.Storage.FileOptions
                     {
-                        ContentType = "text/plain"
+                        ContentType = "application/octet-stream" // Binary format for C3D files
                     });
 
                 if (!string.IsNullOrEmpty(result))
                 {
                     return new FileUploadResult
                     {
-                        FileName = fileName,
+                        FileName = originalFileName,
                         FilePath = result,
                         FileSize = fileInfo.Length,
                         UploadedAt = DateTime.UtcNow,

@@ -185,13 +185,23 @@ namespace GhostlySupaPoc.Clients
                     return null;
                 }
 
-                var fileInfo = new FileInfo(localFilePath);
-                var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                // Validate C3D file format
+                var validationResult = C3DValidator.ValidateC3DFile(localFilePath);
+                if (!validationResult.IsValid)
+                {
+                    Console.WriteLine($"   ❌ File validation failed: {validationResult}");
+                    return null;
+                }
+                
+                if (validationResult.Warnings.Any())
+                {
+                    Console.WriteLine($"   ⚠️ File validation warnings: {string.Join(", ", validationResult.Warnings)}");
+                }
 
-                // 📁 SAME NAMING PATTERN AS SUPABASE CLIENT: PatientCode_HTTP_timestamp.ext
-                var fileExtension = Path.GetExtension(fileInfo.Name);
-                var baseFileName = $"{patientCode}_HTTP_{timestamp}{fileExtension}";
-                var fileName = $"{patientCode}/{baseFileName}";
+                var fileInfo = new FileInfo(localFilePath);
+                // Preserve original filename to maintain embedded metadata (timestamps, etc.)
+                var originalFileName = fileInfo.Name;
+                var fileName = $"{patientCode}/{originalFileName}";
 
                 var fileBytes = await File.ReadAllBytesAsync(localFilePath);
 
@@ -205,7 +215,7 @@ namespace GhostlySupaPoc.Clients
 
                     return new FileUploadResult
                     {
-                        FileName = fileName,
+                        FileName = originalFileName,
                         FilePath = $"{_bucketName}/{fileName}",
                         FileSize = fileInfo.Length,
                         UploadedAt = DateTime.UtcNow,
