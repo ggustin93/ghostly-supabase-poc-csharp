@@ -23,10 +23,10 @@ graph TD
 
 ### Component Overview
 1. **Client Application**
-   - Console-based .NET 7.0 application
+   - Console-based .NET 9.0 LTS application
    - Two implementation approaches:
-     - Official Supabase client (`GhostlyPOC`)
-     - Raw HTTP client (`GhostlyHttpPOC`)
+     - Official Supabase client (`SupabaseClient`)
+     - Raw HTTP client (`CustomHttpClient`)
 
 2. **Authentication Layer**
    - Email/password authentication
@@ -160,11 +160,12 @@ CREATE TABLE public.emg_sessions (
   - Flexibility in implementation
   - Backup approach availability
 
-### 3. .NET 7.0 Selection
-- **Decision**: Use .NET 7.0 for development
+### 3. .NET 9.0 LTS Selection
+- **Decision**: Use .NET 9.0 LTS for development (upgraded from 7.0)
 - **Rationale**:
-  - Modern features
-  - Long-term support
+  - Long-term support through 2032
+  - Security updates and patches
+  - Modern language features and performance improvements
   - Cross-platform compatibility
 
 ### 4. Storage Organization

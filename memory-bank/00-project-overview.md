@@ -1,7 +1,7 @@
 # GHOSTLY+ Project Overview
 
 ## 1. Project Description
-GHOSTLY+ is a .NET 7 Proof of Concept (POC) designed to validate the use of Supabase for building secure, multi-tenant medical applications. The core of the project is a console application that tests and demonstrates Supabase's capabilities for:
+GHOSTLY+ is a .NET 9.0 LTS application that demonstrates secure, multi-tenant medical data management using Supabase. The core of the project is a console application that tests and demonstrates Supabase's capabilities for:
 -   **Authentication**: Secure sign-in for multiple therapist users.
 -   **Segregated Data Storage**: Using Supabase Storage and PostgreSQL to ensure patient data is strictly isolated between therapists.
 -   **Row-Level Security (RLS)**: Implementing database and storage policies to enforce the multi-tenant security model.
@@ -15,14 +15,16 @@ The primary goal is to produce a well-documented, secure, and testable foundatio
     -   Comparing two different C# client implementations.
     -   Creating comprehensive documentation for architecture, security, and setup.
 
--   **Out of Scope**:
-    -   A graphical user interface (GUI).
-    -   Advanced business logic beyond the core use case.
-    -   Production-ready deployment configurations.
+-   **Current Status**:
+    -   Multi-tenant RLS security implementation and validation
+    -   C3D file processing capability (biomechanical data)
+    -   Environment configuration (Repl.it + appsettings.json)
+    -   E2E test suite implementation (5 test scenarios)
+    -   Framework updated to .NET 9.0 LTS
 
 ## 3. Technology Stack
 -   **Backend Platform**: Supabase (Authentication, PostgreSQL Database, Storage)
--   **Language & Framework**: C# on .NET 7
+-   **Language & Framework**: C# on .NET 9.0 LTS (upgraded from 7.0)
 -   **Key Libraries**:
     -   `supabase-csharp`: The official community client for Supabase.
     -   `dotenv.net`: For managing environment variables in development.
@@ -33,16 +35,20 @@ The primary goal is to produce a well-documented, secure, and testable foundatio
 -   **Development Team**: Responsible for implementing and maintaining the system.
 
 ## Timeline and Milestones
-Phase 1: Initial POC Development (Current)
-- ✅ Basic Supabase integration
-- ✅ File upload/download functionality
-- ✅ Patient folder organization
+**Phase 1: Initial POC Development**
+- Basic Supabase integration
+- File upload/download functionality  
+- Patient folder organization
+- Framework upgrade to .NET 9.0 LTS
+- Configuration system simplification
 
-Phase 2: Multi-Therapist RLS Implementation
+**Phase 2: Multi-Therapist RLS Implementation**
 - Database schema setup with RLS policies
 - Storage access control implementation
-- Comprehensive testing suite
+- Testing suite development (5 test scenarios)
 - Documentation and security review
+- C3D file processing implementation
+- Environment validation
 
 ## Repository Structure
 The project has been refactored into a clean, feature-oriented structure.
@@ -65,8 +71,8 @@ The project has been refactored into a clean, feature-oriented structure.
 
 ## Getting Started
 1. Prerequisites:
-   - .NET 7.0 SDK
-   - Supabase account and project
+   - .NET 9.0 SDK (or compatible runtime)
+   - Supabase account and project  
    - Git
 
 2. Environment Setup:

@@ -20,8 +20,14 @@ graph TD
 
     subgraph "Supporting Code"
         Config["Config/"]
+        Configuration["Configuration/"]
         Models["Models/"]
         Utils["Utils/"]
+    end
+    
+    subgraph "Examples & Testing"
+        MobileExample["MobileUploadExample.cs"]
+        E2ETests["tests/E2E/"]
     end
 
     Main --> ISupaClient
@@ -58,6 +64,13 @@ This directory contains the interchangeable strategies for communicating with Su
 
 ## 4. Supporting Components
 
--   **`src/Config/`**: Contains `TestConfig.cs`, which is responsible for loading all necessary configuration from environment variables or a `.env` file (e.g., Supabase URL, API keys, test user credentials).
--   **`src/Models/`**: Contains all the C# Plain Old CLR Objects (POCOs) that map to the database tables (e.g., `Patient.cs`, `EmgSession.cs`) or represent API responses.
--   **`src/Utils/`**: Contains shared helper classes for common tasks like writing to the console (`ConsoleHelper.cs`), managing environment variables (`DotEnv.cs`), and custom exceptions (`SecurityFailureException.cs`).
+-   **`src/Config/`**: Contains `TestConfig.cs`, a simplified wrapper around `SimpleConfig` for test-specific configuration.
+-   **`src/Configuration/`**: Contains `SimpleConfig.cs`, the centralized configuration system that loads from environment variables with `appsettings.json` fallback.
+-   **`src/Models/`**: Contains C# Plain Old CLR Objects (POCOs) that map to database tables and represent API responses (e.g., `Patient.cs`, `EmgSession.cs`, `TherapySession.cs`, `UserProfile.cs`).
+-   **`src/Utils/`**: Contains shared utilities including C3D file validation (`C3DValidator.cs`), console helpers, and common operations.
+
+## 5. Examples & Testing
+
+-   **`src/MobileUploadExample.cs`**: Demonstrates mobile-style file upload workflow with real-world C3D file processing.
+-   **`tests/E2E/TherapistUploadTest.cs`**: Comprehensive end-to-end test suite covering configuration validation, authentication, file operations, and workflow validation.
+-   **`c3d-test-samples/`**: Real biomechanical C3D files (1.1MB) used for testing file upload and processing workflows.

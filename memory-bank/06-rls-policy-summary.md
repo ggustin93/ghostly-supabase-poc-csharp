@@ -1,7 +1,7 @@
 # Supabase Storage RLS Policy Summary
 
-**Document Version: 1.0**  
-**Date:** June 20, 2025
+**Document Version: 2.0**  
+**Date:** September 5, 2025
 
 ---
 
@@ -9,7 +9,7 @@
 
 This document outlines the Row-Level Security (RLS) policies for the `storage.objects` table. These policies secure file access by ensuring users can only interact with objects for which they have explicit authorization.
 
-The architecture uses two storage buckets, `c3d-files` and `emg_data`, each with distinct policies applied to the `authenticated` user role. This prevents anonymous access and enforces role-based permissions.
+The current architecture uses the `emg_data` storage bucket with multi-tenant RLS policies applied to the `authenticated` user role. This prevents anonymous access and enforces therapist-specific data isolation.
 
 ---
 
@@ -17,28 +17,7 @@ The architecture uses two storage buckets, `c3d-files` and `emg_data`, each with
 
 The following policies are active on the `storage.objects` table.
 
-### 2.1. General Access Bucket (`c3d-files`)
-
-This bucket supports general-purpose file operations and is the target for client comparison tests.
-
--   **Policy Name**: `Allow authenticated access to c3d-files`
--   **Target Role**: `authenticated`
--   **Permissions**: `ALL` (SELECT, INSERT, UPDATE, DELETE)
--   **Description**: Grants any authenticated user full permissions to objects within the `c3d-files` bucket. Access is restricted to authenticated users only.
-
-#### SQL Definition:
-```sql
-CREATE POLICY "Allow authenticated access to c3d-files"
-ON storage.objects
-FOR ALL
-TO authenticated
-USING (bucket_id = 'c3d-files'::text)
-WITH CHECK (bucket_id = 'c3d-files'::text);
-```
-
----
-
-### 2.2. High-Security Multi-Tenant Bucket (`emg_data`)
+### 2.1. Multi-Tenant Data Storage (`emg_data`)
 
 This bucket stores sensitive patient data and uses a multi-tenant RLS policy to ensure strict data isolation between therapists.
 
@@ -66,6 +45,21 @@ WITH CHECK (
 
 ---
 
-## 3. Conclusion
+## 3. Configuration
 
-The RLS strategy segregates general-purpose file storage from high-security, multi-tenant data, providing a robust and flexible security model that adheres to the principle of least privilege. 
+### Environment Variables
+The bucket configuration is managed through environment variables:
+- `BUCKET_NAME` or `BucketName` (appsettings.json): Specifies the target storage bucket (currently "emg_data")
+- Configuration priority: Environment variables > appsettings.json > defaults
+
+### Testing
+The RLS policies are validated through:
+- Multi-therapist isolation tests in `src/RlsTests/MultiTherapistRlsTests.cs`
+- End-to-end workflow tests in `tests/E2E/TherapistUploadTest.cs`
+- Client-side security validation in both `SupabaseClient` and `CustomHttpClient`
+
+---
+
+## 4. Conclusion
+
+The RLS strategy provides a robust multi-tenant security model that ensures strict data isolation between therapists while maintaining operational flexibility through configurable bucket management. 

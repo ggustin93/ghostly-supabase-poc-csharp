@@ -116,8 +116,8 @@ public async Task<FileUploadResult> UploadFileAsync(string patientCode, string l
 ```
 
 **Parameters**:
-- `bucket`: "c3d-files"
-- `path`: "{patientCode}/{filename}"
+- `bucket`: "emg_data" (configured via environment variables)
+- `path`: "{patientCode}/{originalFilename}" (preserves original filename with embedded metadata)
 
 **Response**:
 ```json
@@ -137,8 +137,8 @@ public async Task<bool> DownloadFileAsync(string fileName, string localPath, str
 ```
 
 **Parameters**:
-- `bucket`: "c3d-files"
-- `path`: "{patientCode}/{filename}"
+- `bucket`: "emg_data" (configured via environment variables)
+- `path`: "{patientCode}/{originalFilename}" (maintains original filename structure)
 
 **Response**: Binary file content
 
