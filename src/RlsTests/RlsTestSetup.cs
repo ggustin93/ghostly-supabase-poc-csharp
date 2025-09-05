@@ -38,7 +38,7 @@ namespace GhostlySupaPoc.RlsTests
                 }
                 
                 // Display detailed patient information
-                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.FirstName} {patient.LastName} ({patient.PatientCode})");
+                ConsoleHelper.WriteInfo($"Found assigned patient: {patient.PatientCode} (Age: {patient.AgeGroup ?? "N/A"}, Gender: {patient.Gender ?? "N/A"})");
                 ConsoleHelper.WriteInfo($"  │ Patient ID (DB): {patient.Id}");
                 ConsoleHelper.WriteInfo($"  └ Assigned to therapist: {patient.TherapistId}");
 
@@ -64,24 +64,10 @@ namespace GhostlySupaPoc.RlsTests
                 ConsoleHelper.WriteInfo($"  │ File Size: {fileContent.Length} bytes");
                 ConsoleHelper.WriteInfo($"  └ File Name: {fileName}");
 
-                var emgSession = new EmgSession
-                {
-                    PatientId = patient.Id,
-                    FilePath = filePathInBucket,
-                    RecordedAt = DateTime.UtcNow,
-                    Notes = $"Test session created by automated setup for {therapistEmail}. File Name: {fileName}"
-                };
-
-                var response = await supabase.From<EmgSession>().Insert(emgSession);
-                var createdSession = response.Models.FirstOrDefault();
-                
-                ConsoleHelper.WriteSuccess("Successfully created EMG session metadata record.");
-                if (createdSession != null)
-                {
-                    ConsoleHelper.WriteInfo($"  │ Session ID in DB: {createdSession.Id}");
-                    ConsoleHelper.WriteInfo($"  │ Recorded At: {createdSession.RecordedAt:yyyy-MM-dd HH:mm:ss}");
-                    ConsoleHelper.WriteInfo($"  └ File Path: {createdSession.FilePath}");
-                }
+                // EMG session creation removed - focusing on file operations only
+                // The therapy_sessions table requires different fields than the old emg_sessions
+                // Tests will focus on file upload/download security via patient codes
+                ConsoleHelper.WriteInfo("Note: EMG session creation skipped - focusing on file security tests only.");
             }
             catch (Exception ex)
             {
