@@ -4,8 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using GhostlySupaPoc.Models; // For FileUploadResult
-using GhostlySupaPoc.Config; // For TestConfig
-using GhostlySupaPoc.Utils; // For ConsoleHelper
+using GhostlySupaPoc.Config; // For SimpleConfig
 
 namespace GhostlySupaPoc.Utils
 {
@@ -267,8 +266,9 @@ Device: Android Tablet (GHOSTLY+ v1.2)
             Console.WriteLine("ℹ️ Test Configuration:");
             Console.WriteLine($"   Patient Code: {patientCode}");
             Console.WriteLine($"   Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-            Console.WriteLine($"   Supabase URL: {TestConfig.SupabaseUrl}");
-            Console.WriteLine($"   Bucket: {TestConfig.TestBucket}");
+            var config = SimpleConfig.Instance;
+            Console.WriteLine($"   Supabase URL: {config.SupabaseUrl}");
+            Console.WriteLine($"   Bucket: {config.BucketName}");
             
             Console.WriteLine("\n> Results:");
 
