@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a .NET 7 console application that demonstrates secure multi-tenant architecture using Supabase with Row-Level Security (RLS). The project validates two C# Supabase client implementations and includes comprehensive RLS security testing.
+This is a .NET 9.0 console application that demonstrates secure multi-tenant architecture using Supabase with Row-Level Security (RLS). The project validates two C# Supabase client implementations and includes comprehensive RLS security testing.
 
 ## Development Commands
 

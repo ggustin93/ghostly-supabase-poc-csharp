@@ -46,11 +46,11 @@ msbuild.wrn
 
 # Ghostly+ POC specific
 c3d-test-download/
-c3d-test-samples/
 
-# Environment and temporary files
+
+# Environment and sensitive configuration
 .env
-appsettings.json
+appsettings.json  # Contains real credentials, use appsettings.example.json as template
 
 # Serena session data
 .serena/
@@ -58,3 +58,7 @@ appsettings.json
 # Test outputs
 test-results/
 *.log
+
+
+.cursor/
+.claude/
