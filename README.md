@@ -26,19 +26,13 @@ The repository includes:
 
 2.  **Set up credentials** (choose one method):
     
-    **Option A: Using .env file (Recommended)**:
-    ```bash
-    cp .env.example .env
-    # Edit .env with your Supabase credentials
-    ```
-    
-    **Option B: Using appsettings.json**:
+    **Option A: Using appsettings.json (Recommended)**:
     ```bash
     cp appsettings.example.json appsettings.json
     # Edit appsettings.json with your credentials
     ```
     
-    **Option C: Using environment variables directly**:
+    **Option B: Using environment variables directly**:
     ```bash
     export SUPABASE_URL="https://your-project.supabase.co"
     export SUPABASE_ANON_KEY="your-anon-key"

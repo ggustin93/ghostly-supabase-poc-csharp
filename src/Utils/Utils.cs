@@ -79,7 +79,7 @@ namespace GhostlySupaPoc.Utils
                     {
                         throw new InvalidOperationException(
                             $"Required environment variable '{key}' is not set. " +
-                            $"Please set it in your environment or .env file");
+                            $"Please set it in your environment or appsettings.json");
                     }
                 }
                 return defaultValue;

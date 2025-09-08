@@ -49,7 +49,6 @@ c3d-test-download/
 
 
 # Environment and sensitive configuration
-.env
 appsettings.json  # Contains real credentials, use appsettings.example.json as template
 
 # Serena session data
