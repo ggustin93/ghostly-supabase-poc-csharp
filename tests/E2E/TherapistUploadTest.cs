@@ -65,19 +65,19 @@ namespace GhostlySupaPoc.Tests.E2E
                 );
                 
                 bool authenticated = await client.AuthenticateAsync(
-                    _config.TestTherapistEmail, 
-                    _config.TestTherapistPassword
+                    _config.Therapist1Email, 
+                    _config.Therapist1Password
                 );
                 
                 if (authenticated)
                 {
-                    Console.WriteLine($"✅ Authenticated as: {_config.TestTherapistEmail}");
+                    Console.WriteLine($"✅ Authenticated as: {_config.Therapist1Email}");
                     await client.SignOutAsync();
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Authentication failed for: {_config.TestTherapistEmail}");
+                    Console.WriteLine($"❌ Authentication failed for: {_config.Therapist1Email}");
                     return false;
                 }
             }
@@ -116,7 +116,13 @@ namespace GhostlySupaPoc.Tests.E2E
                 }
                 
                 byte[] header = new byte[2];
-                stream.Read(header, 0, 2);
+                int bytesRead = stream.Read(header, 0, 2);
+                
+                if (bytesRead < 2)
+                {
+                    Console.WriteLine("❌ Could not read C3D header (insufficient bytes)");
+                    return false;
+                }
                 
                 if (header[1] == 0x50) // C3D parameter section indicator
                 {
@@ -134,7 +140,7 @@ namespace GhostlySupaPoc.Tests.E2E
         /// <summary>
         /// Test 4: Complete upload workflow
         /// </summary>
-        public async Task<bool> TestCompleteUploadWorkflow()
+        public Task<bool> TestCompleteUploadWorkflow()
         {
             Console.WriteLine("\nTEST 4: Complete Upload Workflow");
             Console.WriteLine("---------------------------------");
@@ -144,26 +150,26 @@ namespace GhostlySupaPoc.Tests.E2E
                 // Use the mobile example for a real-world test
                 bool success = true; // await MobileUploadExample.UploadC3DFile // Temporarily disabled 
                 // Parameters for future use:
-                // therapistEmail: _config.TestTherapistEmail,
-                // therapistPassword: _config.TestTherapistPassword,
+                // therapistEmail: _config.Therapist1Email,
+                // therapistPassword: _config.Therapist1Password,
                 // patientCode: "P000", // Test patient
                 // c3dFilePath: _testC3DFile
                 
                 if (success)
                 {
                     Console.WriteLine("✅ Complete workflow successful");
-                    return true;
+                    return Task.FromResult(true);
                 }
                 else
                 {
                     Console.WriteLine("❌ Upload workflow failed");
-                    return false;
+                    return Task.FromResult(false);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Workflow error: {ex.Message}");
-                return false;
+                return Task.FromResult(false);
             }
         }
         
@@ -184,7 +190,7 @@ namespace GhostlySupaPoc.Tests.E2E
                 );
                 
                 // Authenticate
-                if (!await client.AuthenticateAsync(_config.TestTherapistEmail, _config.TestTherapistPassword))
+                if (!await client.AuthenticateAsync(_config.Therapist1Email, _config.Therapist1Password))
                 {
                     Console.WriteLine("❌ Could not authenticate to check files");
                     return false;
