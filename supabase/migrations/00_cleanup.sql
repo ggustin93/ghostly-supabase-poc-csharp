@@ -1,6 +1,5 @@
 -- This script resets the database to a clean state before applying the new schema.
 -- It is designed to be run multiple times without errors.
--- IMPORTANT: This script explicitly AVOIDS touching the 'c3d-files' bucket.
 
 
 -- Drop existing public tables in reverse order of dependency to avoid foreign key conflicts.
@@ -25,10 +24,9 @@ DROP FUNCTION IF EXISTS get_current_therapist_id();
 DELETE FROM auth.users WHERE email IN ('michael.chen@ghostly.com');
 
 
--- Clean up and delete ONLY the 'emg_data' bucket, leaving all others intact.
+-- Clean up and delete the 'emg_data' bucket
 DELETE FROM storage.objects WHERE bucket_id = 'emg_data';
 DELETE FROM storage.buckets WHERE id = 'emg_data';
 
 -- Note: Policies associated with the dropped tables are removed automatically.
--- Storage policies on 'emg_data' are also implicitly removed when the bucket is deleted.
--- The policies on 'c3d-files' remain untouched. 
+-- Storage policies on 'emg_data' are also implicitly removed when the bucket is deleted. 
