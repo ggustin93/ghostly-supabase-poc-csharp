@@ -10,69 +10,6 @@ The repository includes:
 
 ---
 
-## 🔒 How Supabase RLS (Row-Level Security) Works
-
-### What is RLS?
-Row-Level Security is a PostgreSQL feature that Supabase uses to automatically filter data at the database level based on who's authenticated. It ensures complete data isolation between users without writing any filtering code in your application.
-
-### How It Works in This Project
-
-#### 1. **Authentication Context**
-When a therapist authenticates:
-```csharp
-await client.AuthenticateAsync("therapist1@example.com", "password");
-```
-Supabase sets their `auth.uid()` in the database session context.
-
-#### 2. **Automatic Filtering**
-RLS policies automatically filter all queries:
-```sql
--- This policy on the patients table
-CREATE POLICY "Allow therapists to manage their assigned patients"
-ON public.patients FOR ALL
-USING (therapist_id = public.get_current_therapist_id())
-```
-
-When you query patients:
-```csharp
-var patients = await client.GetPatientsAsync();
-// Returns ONLY patients where therapist_id matches the authenticated user
-```
-
-#### 3. **Security Guarantees**
-- **Therapist 1** can NEVER see Therapist 2's patients
-- **Therapist 2** can NEVER see Therapist 1's patients
-- This happens at the database level - even direct SQL queries are filtered
-- No application code can bypass these policies
-
-### Example in Action
-```csharp
-// Therapist 1 authenticates
-await client.AuthenticateAsync("therapist1@example.com", "password");
-var patients = await client.GetPatientsAsync();
-// Returns: [P001] - only their assigned patient
-
-// Therapist 2 authenticates
-await client.AuthenticateAsync("therapist2@example.com", "password");
-var patients = await client.GetPatientsAsync();
-// Returns: [P002] - only their assigned patient
-```
-
-### Storage RLS
-The same principle applies to file storage:
-```sql
-CREATE POLICY "Allow therapists to upload files for assigned patients"
-ON storage.objects FOR INSERT
-WITH CHECK (
-    bucket_id = 'emg_data' AND
-    public.is_assigned_to_patient((storage.foldername(name))[1])
-)
-```
-
-Files are organized as `{patient_code}/{filename}`, and therapists can only access files in folders for their assigned patients.
-
----
-
 ## Getting Started
 
 ### Prerequisites
@@ -109,7 +46,7 @@ Files are organized as `{patient_code}/{filename}`, and therapists can only acce
     
     > **Priority**: Environment variables override appsettings.json values
 
-3.  **Storage Buckets**: In your Supabase project dashboard, create two Storage buckets: `c3d-files` and `emg_data`.
+3.  **Storage Buckets**: In your Supabase project dashboard, create the Storage bucket: `emg_data`.
 
 4.  **Database Migrations**: Link your Supabase Cloud project and apply migrations to set up the schema, RLS policies, and seed data.
     ```bash
@@ -226,11 +163,74 @@ erDiagram
 
 ---
 
+## 🔒 How Supabase RLS (Row-Level Security) Works
+
+### What is RLS?
+Row-Level Security is a PostgreSQL feature that Supabase uses to automatically filter data at the database level based on who's authenticated. It ensures complete data isolation between users without writing any filtering code in your application.
+
+### How It Works in This Project
+
+#### 1. **Authentication Context**
+When a therapist authenticates:
+```csharp
+await client.AuthenticateAsync("therapist1@example.com", "password");
+```
+Supabase sets their `auth.uid()` in the database session context.
+
+#### 2. **Automatic Filtering**
+RLS policies automatically filter all queries:
+```sql
+-- This policy on the patients table
+CREATE POLICY "Allow therapists to manage their assigned patients"
+ON public.patients FOR ALL
+USING (therapist_id = public.get_current_therapist_id())
+```
+
+When you query patients:
+```csharp
+var patients = await client.GetPatientsAsync();
+// Returns ONLY patients where therapist_id matches the authenticated user
+```
+
+#### 3. **Security Guarantees**
+- **Therapist 1** can NEVER see Therapist 2's patients
+- **Therapist 2** can NEVER see Therapist 1's patients
+- This happens at the database level - even direct SQL queries are filtered
+- No application code can bypass these policies
+
+### Example in Action
+```csharp
+// Therapist 1 authenticates
+await client.AuthenticateAsync("therapist1@example.com", "password");
+var patients = await client.GetPatientsAsync();
+// Returns: [P001] - only their assigned patient
+
+// Therapist 2 authenticates
+await client.AuthenticateAsync("therapist2@example.com", "password");
+var patients = await client.GetPatientsAsync();
+// Returns: [P002] - only their assigned patient
+```
+
+### Storage RLS
+The same principle applies to file storage:
+```sql
+CREATE POLICY "Allow therapists to upload files for assigned patients"
+ON storage.objects FOR INSERT
+WITH CHECK (
+    bucket_id = 'emg_data' AND
+    public.is_assigned_to_patient((storage.foldername(name))[1])
+)
+```
+
+Files are organized as `{patient_code}/{filename}`, and therapists can only access files in folders for their assigned patients.
+
+---
+
 ## Core Test Scenarios
 
 The application's main menu provides access to two validation suites:
 
-1.  **Client Comparison Suite**: Runs a sequence of tests for both client implementations against the `c3d-files` storage bucket to compare behavior and performance.
+1.  **Client Comparison Suite**: Runs a sequence of tests for both client implementations to compare behavior and performance.
 
 2.  **Multi-Therapist RLS Suite**: Validates the core multi-tenant security model. It uses the `emg_data` bucket to confirm a `therapist` user can only access data and files belonging to their assigned patients.
 

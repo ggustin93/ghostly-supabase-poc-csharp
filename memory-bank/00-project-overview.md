@@ -88,7 +88,7 @@ The project has been refactored into a clean, feature-oriented structure.
 
 3. Supabase Configuration:
    - Create a new Supabase project
-   - Create 'c3d-files' bucket in Storage
+   - Create 'emg_data' bucket in Storage
    - Enable Row Level Security
    - Create test user accounts
 

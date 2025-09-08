@@ -72,7 +72,7 @@ Multi-tenant isolation is enforced at multiple levels:
 - Required environment variables:
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
-  - Storage buckets: `c3d-files` (legacy), `emg_data` (RLS testing)
+  - Storage bucket: `emg_data` (for RLS testing and file operations)
 
 ### Testing Architecture
 Two main test suites accessible via interactive menu:
