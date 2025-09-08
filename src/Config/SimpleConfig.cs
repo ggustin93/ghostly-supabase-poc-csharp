@@ -17,16 +17,10 @@ namespace GhostlySupaPoc.Config
         public string SupabaseUrl { get; set; }
         public string SupabaseKey { get; set; }
         public string BucketName { get; set; } = "emg_data";
-        public string TestTherapistEmail { get; set; }
-        public string TestTherapistPassword { get; set; }
+        public string Therapist1Email { get; set; }
+        public string Therapist1Password { get; set; }
         public string Therapist2Email { get; set; }
         public string Therapist2Password { get; set; }
-        
-        // Additional properties for compatibility with old TestConfig
-        public string SupabaseAnonKey => SupabaseKey;
-        public string TestBucket => BucketName;
-        public string Therapist1Email => TestTherapistEmail;
-        public string Therapist1Password => TestTherapistPassword;
         
         /// <summary>
         /// Get the singleton instance of configuration
@@ -82,10 +76,10 @@ namespace GhostlySupaPoc.Config
             
             // 2. Override with environment variables
             config.SupabaseUrl = Environment.GetEnvironmentVariable("SUPABASE_URL") ?? config.SupabaseUrl;
-            config.SupabaseKey = Environment.GetEnvironmentVariable("SUPABASE_ANON_KEY") ?? Environment.GetEnvironmentVariable("SUPABASE_KEY") ?? config.SupabaseKey;
-            config.BucketName = Environment.GetEnvironmentVariable("DEFAULT_BUCKET") ?? Environment.GetEnvironmentVariable("BUCKET_NAME") ?? config.BucketName ?? "emg_data";
-            config.TestTherapistEmail = Environment.GetEnvironmentVariable("THERAPIST1_EMAIL") ?? Environment.GetEnvironmentVariable("TEST_THERAPIST_EMAIL") ?? config.TestTherapistEmail;
-            config.TestTherapistPassword = Environment.GetEnvironmentVariable("THERAPIST1_PASSWORD") ?? Environment.GetEnvironmentVariable("TEST_THERAPIST_PASSWORD") ?? config.TestTherapistPassword;
+            config.SupabaseKey = Environment.GetEnvironmentVariable("SUPABASE_ANON_KEY") ?? config.SupabaseKey;
+            config.BucketName = Environment.GetEnvironmentVariable("DEFAULT_BUCKET") ?? config.BucketName ?? "emg_data";
+            config.Therapist1Email = Environment.GetEnvironmentVariable("THERAPIST1_EMAIL") ?? config.Therapist1Email;
+            config.Therapist1Password = Environment.GetEnvironmentVariable("THERAPIST1_PASSWORD") ?? config.Therapist1Password;
             config.Therapist2Email = Environment.GetEnvironmentVariable("THERAPIST2_EMAIL") ?? config.Therapist2Email;
             config.Therapist2Password = Environment.GetEnvironmentVariable("THERAPIST2_PASSWORD") ?? config.Therapist2Password;
             
