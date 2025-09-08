@@ -20,6 +20,15 @@ namespace GhostlySupaPoc.Clients
         Task<bool> AuthenticateAsync(string email, string password);
         
         /// <summary>
+        /// Gets the list of patients assigned to the currently authenticated therapist.
+        /// This method leverages Supabase Row-Level Security (RLS) policies which automatically
+        /// filter results to only show patients where therapist_id matches the authenticated user.
+        /// No manual filtering is needed - the database ensures data isolation.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation, containing a list of assigned patients.</returns>
+        Task<List<Patient>> GetPatientsAsync();
+        
+        /// <summary>
         /// Uploads a file to a patient-specific folder in Supabase Storage.
         /// </summary>
         /// <param name="patientCode">The unique identifier for the patient.</param>

@@ -42,8 +42,56 @@ namespace GhostlySupaPoc.Clients
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
             };
             _jsonOptions.Converters.Add(new SupabaseDateTimeConverter());
+        }
+
+        /// <summary>
+        /// Gets the list of patients assigned to the currently authenticated therapist.
+        /// Uses direct HTTP API with Bearer token which triggers RLS automatic filtering.
+        /// The database policy ensures only assigned patients are returned.
+        /// </summary>
+        public async Task<List<Patient>> GetPatientsAsync()
+        {
+            if (!_isAuthenticated || string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("   ❌ Not authenticated - cannot fetch patients");
+                return new List<Patient>();
+            }
+
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"{_supabaseUrl}/rest/v1/patients");
+                request.Headers.Add("Authorization", $"Bearer {_accessToken}");
+                request.Headers.Add("apikey", _supabaseKey);
+                
+                var response = await _httpClient.SendAsync(request);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"   ❌ Failed to fetch patients: {response.StatusCode} - {errorContent}");
+                    return new List<Patient>();
+                }
+                
+                var json = await response.Content.ReadAsStringAsync();
+                var patients = JsonSerializer.Deserialize<List<Patient>>(json, _jsonOptions);
+                
+                if (patients != null && patients.Any())
+                {
+                    Console.WriteLine($"   ✅ Found {patients.Count} assigned patient(s) (RLS filtered via HTTP)");
+                    return patients;
+                }
+                
+                Console.WriteLine("   ℹ️ No patients assigned to this therapist");
+                return new List<Patient>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   ❌ Error fetching patients: {ex.Message}");
+                return new List<Patient>();
+            }
         }
 
         /// <summary>

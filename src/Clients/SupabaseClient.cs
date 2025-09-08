@@ -75,6 +75,41 @@ namespace GhostlySupaPoc.Clients
         }
 
         /// <summary>
+        /// Gets the list of patients assigned to the currently authenticated therapist.
+        /// Leverages Supabase RLS policies which automatically filter results based on auth context.
+        /// The database policy ensures therapists can only see their own assigned patients.
+        /// </summary>
+        public async Task<List<Patient>> GetPatientsAsync()
+        {
+            if (!_isAuthenticated)
+            {
+                Console.WriteLine("   ❌ Not authenticated - cannot fetch patients");
+                return new List<Patient>();
+            }
+
+            try
+            {
+                // This query automatically applies RLS filtering
+                // Only patients where therapist_id = current user's therapist_id are returned
+                var response = await _supabase.From<Patient>().Get();
+                
+                if (response?.Models != null && response.Models.Any())
+                {
+                    Console.WriteLine($"   ✅ Found {response.Models.Count} assigned patient(s) (RLS filtered)");
+                    return response.Models;
+                }
+                
+                Console.WriteLine("   ℹ️ No patients assigned to this therapist");
+                return new List<Patient>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"   ❌ Error fetching patients: {ex.Message}");
+                return new List<Patient>();
+            }
+        }
+
+        /// <summary>
         /// Uploads a file to a patient-specific subfolder in Supabase Storage.
         /// </summary>
         public async Task<FileUploadResult> UploadFileAsync(string patientCode, string localFilePath)
