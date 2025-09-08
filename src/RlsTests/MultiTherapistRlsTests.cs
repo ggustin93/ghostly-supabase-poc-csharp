@@ -20,11 +20,6 @@ namespace GhostlySupaPoc.RlsTests
         {
             ConsoleHelper.WriteMajorHeader("Starting Multi-Therapist RLS Validation Tests");
             
-            // --- DEBUG PHASE - New debugging step ---
-            ConsoleHelper.WriteHeader("PHASE 0: RLS Debug Analysis");
-            await Test_DebugStorageContext(supabase, therapist1Email, therapist1Password, "Therapist 1");
-            await Test_DebugStorageContext(supabase, therapist2Email, therapist2Password, "Therapist 2");
-            
             // --- Basic RLS Tests ---
             ConsoleHelper.WriteHeader("PHASE 1: Basic RLS Tests");
             
@@ -115,20 +110,45 @@ namespace GhostlySupaPoc.RlsTests
 
                 try
                 {
-                    // First, upload a test file to ensure there's something to download
-                    var testContent = Encoding.UTF8.GetBytes($"Test C3D file for patient {patient.PatientCode}\nTherapist: {therapistName}\nTimestamp: {DateTime.UtcNow}");
+                    // Use real C3D file from samples directory
+                    var sampleC3DPath = Path.Combine(Directory.GetCurrentDirectory(), "c3d-test-samples", "Ghostly_Emg_20250310_11-50-16-0578.c3d");
                     
-                    // Try to remove existing file first (if it exists)
-                    try
+                    if (!File.Exists(sampleC3DPath))
                     {
-                        await supabase.Storage.From(rlsTestBucket).Remove(new List<string> { filePath });
+                        ConsoleHelper.WriteWarning($"Sample C3D file not found at: {sampleC3DPath}");
+                        ConsoleHelper.WriteInfo("Creating mock C3D content instead...");
+                        
+                        // Fallback to mock content if sample file doesn't exist
+                        var mockContent = GenerateMockC3DContent(patient.PatientCode, "test_file.c3d");
+                        var testContent = Encoding.UTF8.GetBytes(mockContent);
+                        
+                        // Try to remove existing file first (if it exists)
+                        try
+                        {
+                            await supabase.Storage.From(rlsTestBucket).Remove(new List<string> { filePath });
+                        }
+                        catch { /* File might not exist, that's ok */ }
+                        
+                        await supabase.Storage.From(rlsTestBucket).Upload(testContent, filePath);
                     }
-                    catch
+                    else
                     {
-                        // File might not exist, that's ok
+                        // Upload real C3D file
+                        var c3dBytes = await File.ReadAllBytesAsync(sampleC3DPath);
+                        
+                        // Try to remove existing file first (if it exists)
+                        try
+                        {
+                            await supabase.Storage.From(rlsTestBucket).Remove(new List<string> { filePath });
+                        }
+                        catch { /* File might not exist, that's ok */ }
+                        
+                        await supabase.Storage.From(rlsTestBucket).Upload(c3dBytes, filePath, new Supabase.Storage.FileOptions
+                        {
+                            ContentType = "application/octet-stream"
+                        });
+                        ConsoleHelper.WriteInfo($"Uploaded real C3D file: {Path.GetFileName(sampleC3DPath)}");
                     }
-                    
-                    await supabase.Storage.From(rlsTestBucket).Upload(testContent, filePath);
                     
                     // Now try to download it
                     var fileBytes = await supabase.Storage.From(rlsTestBucket).Download(filePath, null);
@@ -183,20 +203,20 @@ namespace GhostlySupaPoc.RlsTests
                 victimPatientCode = victimPatient.PatientCode;
                 victimFilePath = $"{victimPatientCode}/private_file.c3d";
                 
-                // Upload a test file as the victim
-                var testContent = Encoding.UTF8.GetBytes($"Private data for patient {victimPatientCode}");
+                // Create test file content (using mock since this is for security testing)
+                var testContent = Encoding.UTF8.GetBytes($"Private C3D data for patient {victimPatientCode}\nCreated: {DateTime.UtcNow}");
                 
                 // Remove file if it exists
                 try
                 {
                     await supabase.Storage.From(rlsTestBucket).Remove(new List<string> { victimFilePath });
                 }
-                catch
-                {
-                    // File might not exist, that's ok
-                }
+                catch { /* File might not exist, that's ok */ }
                 
-                await supabase.Storage.From(rlsTestBucket).Upload(testContent, victimFilePath);
+                await supabase.Storage.From(rlsTestBucket).Upload(testContent, victimFilePath, new Supabase.Storage.FileOptions
+                {
+                    ContentType = "application/octet-stream"
+                });
                 
                 ConsoleHelper.WriteInfo($"Victim's file path: {victimFilePath}");
             }
@@ -241,15 +261,31 @@ namespace GhostlySupaPoc.RlsTests
                     var c3dFileName = $"{patient.PatientCode}_C3D-Test_{timestamp}.c3d";
                     var c3dFilePath = $"{patient.PatientCode}/{c3dFileName}";
                     
-                    // Generate mock C3D content with EMG data
-                    var mockC3dContent = GenerateMockC3DContent(patient.PatientCode, c3dFileName);
+                    // Use real C3D file from samples directory
+                    var sampleC3DPath = Path.Combine(Directory.GetCurrentDirectory(), "c3d-test-samples", "Ghostly_Emg_20250310_11-50-16-0578.c3d");
                     
-                    // Upload the C3D file (webhook will handle processing)
-                    await supabase.Storage.From(rlsTestBucket).Upload(
-                        Encoding.UTF8.GetBytes(mockC3dContent), 
-                        c3dFilePath, 
-                        new Supabase.Storage.FileOptions { ContentType = "application/octet-stream" }
-                    );
+                    if (File.Exists(sampleC3DPath))
+                    {
+                        // Upload real C3D file
+                        var c3dBytes = await File.ReadAllBytesAsync(sampleC3DPath);
+                        await supabase.Storage.From(rlsTestBucket).Upload(
+                            c3dBytes, 
+                            c3dFilePath, 
+                            new Supabase.Storage.FileOptions { ContentType = "application/octet-stream" }
+                        );
+                        ConsoleHelper.WriteInfo($"Using real C3D sample: {Path.GetFileName(sampleC3DPath)}");
+                    }
+                    else
+                    {
+                        // Fallback to mock C3D content
+                        var mockC3dContent = GenerateMockC3DContent(patient.PatientCode, c3dFileName);
+                        await supabase.Storage.From(rlsTestBucket).Upload(
+                            Encoding.UTF8.GetBytes(mockC3dContent), 
+                            c3dFilePath, 
+                            new Supabase.Storage.FileOptions { ContentType = "application/octet-stream" }
+                        );
+                        ConsoleHelper.WriteWarning($"Sample C3D not found, using mock content");
+                    }
                     ConsoleHelper.WriteSuccess($"Successfully uploaded C3D file: {c3dFilePath}");
                     ConsoleHelper.WriteInfo("  │ Webhook will process the file asynchronously");
                     
@@ -521,64 +557,6 @@ namespace GhostlySupaPoc.RlsTests
             return sb.ToString();
         }
 
-        /// <summary>
-        /// Debug test to analyze storage policy context and function behavior
-        /// </summary>
-        private static async Task Test_DebugStorageContext(Supabase.Client supabase, string email, string password, string therapistName)
-        {
-            ConsoleHelper.WriteHeader($"DEBUG: {therapistName} storage context analysis");
-            await using (await TherapistSession.Create(supabase, email, password, therapistName))
-            {
-                try
-                {
-                    ConsoleHelper.WriteInfo("Testing JWT token and auth context...");
-                    var session = supabase.Auth.CurrentSession;
-                    if (session != null)
-                    {
-                        ConsoleHelper.WriteInfo($"JWT Token (first 50 chars): {session.AccessToken?.Substring(0, Math.Min(50, session.AccessToken?.Length ?? 0))}...");
-                    }
-
-                    ConsoleHelper.WriteInfo("Testing debug_storage_access function for P008...");
-                    var debugResult = await supabase.Rpc("debug_storage_access", new { file_path = "P008/private_file.c3d" });
-                    
-                    if (debugResult != null)
-                    {
-                        ConsoleHelper.WriteInfo($"Debug Result: {debugResult}");
-                        
-                        // Try to parse and display the JSON nicely
-                        try 
-                        {
-                            var jsonString = debugResult.ToString();
-                            var jsonResult = Newtonsoft.Json.Linq.JObject.Parse(jsonString);
-                            ConsoleHelper.WriteInfo($"  │ Patient Code: {jsonResult["patient_code"]}");
-                            ConsoleHelper.WriteInfo($"  │ Auth Context Valid: {jsonResult["auth_context_valid"]}");
-                            ConsoleHelper.WriteInfo($"  │ Therapist Profile Found: {jsonResult["therapist_profile_found"]}");
-                            ConsoleHelper.WriteInfo($"  │ Owns Patient: {jsonResult["owns_patient"]}");
-                            ConsoleHelper.WriteInfo($"  └ Current User ID: {jsonResult["current_user_id"]}");
-                        }
-                        catch (Exception jsonEx)
-                        {
-                            ConsoleHelper.WriteWarning($"Could not parse JSON response: {jsonEx.Message}");
-                        }
-                    }
-                    else
-                    {
-                        ConsoleHelper.WriteWarning("Debug function returned null - function may not exist or auth context invalid");
-                    }
-
-                    ConsoleHelper.WriteInfo("Testing direct patient ownership query...");
-                    var patients = await supabase.From<Patient>().Get();
-                    var patientCodes = patients.Models.Select(p => p.PatientCode).ToList();
-                    ConsoleHelper.WriteInfo($"Visible patients: {string.Join(", ", patientCodes)}");
-                    ConsoleHelper.WriteInfo($"Can see P008: {patientCodes.Contains("P008")}");
-                }
-                catch (Exception ex)
-                {
-                    ConsoleHelper.WriteError($"Debug test failed: {ex.Message}");
-                    ConsoleHelper.WriteWarning("This might indicate the debug function wasn't created or there's an auth issue");
-                }
-            }
-        }
 
         /// <summary>
         /// Helper class to manage therapist authentication sessions in a using block.
